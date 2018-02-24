@@ -14,6 +14,9 @@
 #include "PluginProcessor.h"
 #include "CustomLookAndFeel.hpp"
 
+typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
+typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 
 //==============================================================================
 /**
@@ -21,12 +24,11 @@
 class RiseandfallAudioProcessorEditor :
         public AudioProcessorEditor,
         public Button::Listener,
-        public ChangeListener,
-        public Slider::Listener {
+        public ChangeListener {
 public:
-    RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &);
+    RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &, AudioProcessorValueTreeState& vts);
 
-    ~RiseandfallAudioProcessorEditor();
+    ~RiseandfallAudioProcessorEditor() override;
 
     //==============================================================================
     void paint(Graphics &) override;
@@ -37,44 +39,55 @@ private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     RiseandfallAudioProcessor &processor;
+    AudioProcessorValueTreeState& valueTreeState;
 
     CustomLookAndFeel customLookAndFeel;
     Slider timeOffsetSlider;
+    ScopedPointer<SliderAttachment> timeOffsetSliderAttachment;
     Slider riseTimeWarpSlider;
+    ScopedPointer<SliderAttachment> riseTimeWarpSliderAttachment;
     Slider fallTimeWarpSlider;
+    ScopedPointer<SliderAttachment> fallTimeWarpSliderAttachment;
     Slider reverbMixSlider;
+    ScopedPointer<SliderAttachment> reverbMixSliderAttachment;
     Slider delayMixSlider;
+    ScopedPointer<SliderAttachment> delayMixSliderAttachment;
     Slider delayTimeSlider;
+    ScopedPointer<SliderAttachment> delayTimeSliderAttachment;
     Slider delayFeedbackSlider;
-    Slider delayFilterCutoffSlider;
-    Slider delayFilterResonanceSlider;
+    ScopedPointer<SliderAttachment> delayFeedbackSliderAttachment;
+    Slider filterCutoffSlider;
+    ScopedPointer<SliderAttachment> filterCutoffSliderAttachment;
+    Slider filterResonanceSlider;
+    ScopedPointer<SliderAttachment> filterResonanceSliderAttachment;
     ComboBox reverbImpResComboBox;
+    ScopedPointer<ComboBoxAttachment> reverbImpResComboBoxAttachment;
     ComboBox filterTypeComboBox;
+    ScopedPointer<ComboBoxAttachment> filterTypeComboBoxAttachment;
     ToggleButton riseReverseToggleButton;
+    ScopedPointer<ButtonAttachment> riseReverseToggleButtonAttachment;
     ToggleButton riseEffectsToggleButton;
+    ScopedPointer<ButtonAttachment> riseEffectsToggleButtonAttachment;
     ToggleButton fallReverseToggleButton;
+    ScopedPointer<ButtonAttachment> fallReverseToggleButtonAttachment;
     ToggleButton fallEffectsToggleButton;
+    ScopedPointer<ButtonAttachment> fallEffectsToggleButtonAttachment;
     TextButton loadFileButton;
-
-    GUIParams *guiParams;
 
     AudioFormatManager formatManager;
 
-    void initSlider(Slider *slider, const String &label, const String &suffix, double min, double max,
-                          double step, double start, bool logarithmic, bool linear);
+    void initSlider(Slider *slider, const String &label, const String &suffix, bool logarithmic, bool linear);
 
     void initComboBox(ComboBox *comboBox, const String &label, const StringArray *items);
 
-
-    void initToggleButton(ToggleButton *toggleButton, bool state, String label);
+    void initToggleButton(ToggleButton *toggleButton, String label);
 
     void buttonClicked(Button *button) override;
 
     void changeListenerCallback(ChangeBroadcaster *source) override;
 
-    void sliderValueChanged(Slider *slider) override;
-
     void loadFileButtonCLicked();
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };

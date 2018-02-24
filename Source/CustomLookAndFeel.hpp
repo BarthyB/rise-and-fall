@@ -33,9 +33,8 @@ public:
         DIMENSION_DECIBEL = CharPointer_UTF8(" dB");
     };
 
-    void
-    drawRotarySlider(Graphics &g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle,
-                     const float rotaryEndAngle, Slider &slider) override {
+    void drawRotarySlider(Graphics &g, int x, int y, int width, int height, float sliderPos,
+                          const float rotaryStartAngle, const float rotaryEndAngle, Slider &slider) override {
         const float radius = (width / 2) - 16.0f;
         const float centreX = x + width * 0.5f;
         const float centreY = centreX;
@@ -195,6 +194,49 @@ public:
             idealWidth = font.getStringWidth(text) + 32;
         }
     }
+
+    void drawLinearSlider(Graphics &g, int x, int y, int width, int height, float sliderPos,
+                          float minSliderPos, float maxSliderPos, const Slider::SliderStyle style,
+                          Slider &slider) override {
+        auto trackWidth = jmin(6.0f, slider.isHorizontal() ? height * 0.25f : width * 0.25f);
+
+        Point<float> startPoint(slider.isHorizontal() ? x : x + width * 0.5f,
+                                slider.isHorizontal() ? y + height * 0.5f : height + y);
+
+        Point<float> endPoint(slider.isHorizontal() ? width + x : startPoint.x,
+                              slider.isHorizontal() ? startPoint.y : y);
+
+        Path backgroundTrack;
+        backgroundTrack.startNewSubPath(startPoint);
+        backgroundTrack.lineTo(endPoint);
+        g.setColour(COLOUR_WHITE.withMultipliedAlpha(0.5));
+        g.strokePath(backgroundTrack, {trackWidth, PathStrokeType::curved, PathStrokeType::rounded});
+
+        Path valueTrack;
+        Point<float> minPoint, maxPoint, thumbPoint;
+
+        auto kx = slider.isHorizontal() ? sliderPos : (x + width * 0.5f);
+        auto ky = slider.isHorizontal() ? (y + height * 0.5f) : sliderPos;
+
+        minPoint = startPoint;
+        maxPoint = {kx, ky};
+
+        valueTrack.startNewSubPath(minPoint);
+        valueTrack.lineTo(maxPoint);
+        g.setColour(COLOUR_WHITE);
+        g.strokePath(valueTrack, {trackWidth, PathStrokeType::curved, PathStrokeType::rounded});
+
+        auto thumbWidth = getSliderThumbRadius(slider);
+
+        g.setColour(COLOUR_RED);
+        g.fillEllipse(Rectangle<float>(static_cast<float> (thumbWidth), static_cast<float> (thumbWidth))
+                              .withCentre(maxPoint));
+
+        g.setFont(12.0f);
+        g.setColour(COLOUR_WHITE);
+        g.drawFittedText(slider.getName(), 12, 0, width, 12, Justification::left, 1);
+    }
+
 };
 
 #endif /* CustomLookAndFeel_hpp */

@@ -7528,6 +7528,8 @@ cstdio
 vector
 -
 
+/Users/Barthy/GitHub/VST/fftw-3.3.7/config.h
+
 /Users/Barthy/GitHub/VST/rise-and-fall/JuceLibraryCode/AppConfig.h
 
 /Users/Barthy/GitHub/VST/rise-and-fall/JuceLibraryCode/BinaryData.cpp
@@ -7957,6 +7959,8 @@ PluginProcessor.h
 /Users/Barthy/GitHub/VST/rise-and-fall/Source/PluginProcessor.h
 PluginEditor.h
 /Users/Barthy/GitHub/VST/rise-and-fall/Source/PluginEditor.h
+ProcessingThreadPoolJob.h
+/Users/Barthy/GitHub/VST/rise-and-fall/Source/ProcessingThreadPoolJob.h
 
 /Users/Barthy/GitHub/VST/rise-and-fall/Source/PluginProcessor.h
 ../JuceLibraryCode/JuceHeader.h
@@ -7967,4 +7971,18 @@ GUIParams.h
 /Users/Barthy/GitHub/VST/rise-and-fall/Source/GUIParams.h
 ../Lib/SoundTouch/SoundTouch.h
 /Users/Barthy/GitHub/VST/rise-and-fall/Lib/SoundTouch/SoundTouch.h
+
+/Users/Barthy/GitHub/VST/rise-and-fall/Source/ProcessingThreadPoolJob.cpp
+ProcessingThreadPoolJob.h
+/Users/Barthy/GitHub/VST/rise-and-fall/Source/ProcessingThreadPoolJob.h
+
+/Users/Barthy/GitHub/VST/rise-and-fall/Source/ProcessingThreadPoolJob.h
+../JuceLibraryCode/JuceHeader.h
+/Users/Barthy/GitHub/VST/rise-and-fall/JuceLibraryCode/JuceHeader.h
+../modules/juce_dsp/juce_dsp.h
+/Users/Barthy/GitHub/VST/rise-and-fall/modules/juce_dsp/juce_dsp.h
+../Lib/SoundTouch/SoundTouch.h
+/Users/Barthy/GitHub/VST/rise-and-fall/Lib/SoundTouch/SoundTouch.h
+GUIParams.h
+/Users/Barthy/GitHub/VST/rise-and-fall/Source/GUIParams.h
 

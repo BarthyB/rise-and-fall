@@ -84,6 +84,8 @@ add_library (SHARED_CODE STATIC
     "../../Lib/SoundTouch/STTypes.h"
     "../../Lib/SoundTouch/TDStretch.cpp"
     "../../Lib/SoundTouch/TDStretch.h"
+    "../../Source/ProcessingThreadPoolJob.cpp"
+    "../../Source/ProcessingThreadPoolJob.h"
     "../../Source/GUIParams.h"
     "../../Source/CustomLookAndFeel.hpp"
     "../../Source/PluginProcessor.cpp"
@@ -91,6 +93,7 @@ add_library (SHARED_CODE STATIC
     "../../Source/PluginEditor.cpp"
     "../../Source/PluginEditor.h"
     "../../Resources/background.png"
+    "../../Resources/minster.wav"
     "../../Resources/room_impulse_response_LBS.wav"
     "../../../JUCE/modules/juce_audio_basics/audio_play_head/juce_AudioPlayHead.h"
     "../../../JUCE/modules/juce_audio_basics/buffers/juce_AudioChannelSet.cpp"
@@ -1394,10 +1397,12 @@ set_source_files_properties ("../../Lib/SoundTouch/soundtouch_config.h" PROPERTI
 set_source_files_properties ("../../Lib/SoundTouch/soundtouch_config.h.in" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Lib/SoundTouch/STTypes.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Lib/SoundTouch/TDStretch.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties ("../../Source/ProcessingThreadPoolJob.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Source/GUIParams.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Source/CustomLookAndFeel.hpp" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Source/PluginProcessor.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Source/PluginEditor.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties ("../../Resources/minster.wav" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../Resources/room_impulse_response_LBS.wav" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../../JUCE/modules/juce_audio_basics/audio_play_head/juce_AudioPlayHead.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties ("../../../JUCE/modules/juce_audio_basics/buffers/juce_AudioChannelSet.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)

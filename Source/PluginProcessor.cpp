@@ -12,6 +12,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "ProcessingThreadPoolJob.h"
 
 //==============================================================================
 RiseandfallAudioProcessor::RiseandfallAudioProcessor()
@@ -23,16 +24,60 @@ RiseandfallAudioProcessor::RiseandfallAudioProcessor()
 #endif
                                  .withOutput("Output", AudioChannelSet::stereo(), true)
 #endif
-), thumbnailCache(5), thumbnail(256, formatManager, thumbnailCache)
+), thumbnailCache(5), thumbnail(256, formatManager, thumbnailCache), parameters(*this, nullptr)
 #endif
 {
     position = 0;
     numChannels = 0;
+    numSamples = 0;
+    samplesPerBlock = 0;
+    processing = true;
+    play = false;
+    sampleRate = -1;
+    
     formatManager.registerBasicFormats();
-    soundTouch.setChannels(1); // always iterate over single channels
+
+    parameters.createAndAddParameter(TIME_OFFSET_ID, TIME_OFFSET_NAME, String(), NormalisableRange<float>(-120, 120, 1),
+                                     0, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_REVERSE_ID, RISE_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1),
+                                     true, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_REVERSE_ID, FALL_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1),
+                                     false, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_EFFECTS_ID, RISE_EFFECTS_NAME, String(), NormalisableRange<float>(0, 1, 1),
+                                     true, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_EFFECTS_ID, FALL_EFFECTS_NAME, String(), NormalisableRange<float>(0, 1, 1),
+                                     true, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_TIME_WARP_ID, RISE_TIME_WARP_NAME, String(),
+                                     NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_TIME_WARP_ID, FALL_TIME_WARP_NAME, String(),
+                                     NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_TIME_ID, DELAY_TIME_NAME, String(), NormalisableRange<float>(10, 1000, 1),
+                                     500, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_FEEDBACK_ID, DELAY_FEEDBACK_NAME, String(),
+                                     NormalisableRange<float>(0, 99, 1), 50, nullptr, nullptr);
+    parameters.createAndAddParameter(IMPULSE_RESPONSE_ID, IMPULSE_RESPONSE_NAME, String(),
+                                     NormalisableRange<float>(0, 1, 1), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_TYPE_ID, FILTER_TYPE_NAME, String(), NormalisableRange<float>(0, 1, 1),
+                                     0, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_CUTOFF_ID, FILTER_CUTOFF_NAME, String(),
+                                     NormalisableRange<float>(20, 20000, 1),
+                                     20000, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_RESONANCE_ID, FILTER_RESONANCE_NAME, String(),
+                                     NormalisableRange<float>(0.1, 10, 0.1),
+                                     1.0, nullptr, nullptr);
+    parameters.createAndAddParameter(REVERB_MIX_ID, REVERB_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1),
+                                     50, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_MIX_ID, DELAY_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1),
+                                     50, nullptr, nullptr);
+
+    parameters.state = ValueTree(Identifier("RiseAndFall"));
+
+    this->addListener(this);
 }
 
-RiseandfallAudioProcessor::~RiseandfallAudioProcessor() = default;
+RiseandfallAudioProcessor::~RiseandfallAudioProcessor() {
+    pool.removeAllJobs(true, 2000);
+}
 
 //==============================================================================
 const String RiseandfallAudioProcessor::getName() const {
@@ -90,9 +135,11 @@ void RiseandfallAudioProcessor::changeProgramName(int index, const String &newNa
 void RiseandfallAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    this->sampleRate = sampleRate;
+    if(this->sampleRate == -1 && sampleRate > 0){
+        this->sampleRate = sampleRate;
+        processSample();
+    }
     this->samplesPerBlock = samplesPerBlock;
-    soundTouch.setSampleRate(static_cast<uint>(sampleRate));
 }
 
 void RiseandfallAudioProcessor::releaseResources() {
@@ -129,34 +176,38 @@ bool RiseandfallAudioProcessor::isBusesLayoutSupported(const BusesLayout &layout
 void RiseandfallAudioProcessor::processBlock(AudioSampleBuffer &buffer, MidiBuffer &midiMessages) {
     ScopedNoDenormals noDenormals;
 
-    buffer.clear();
-    midiMessages.clear();
-
-    if (numChannels > 0 && !processing) {
-        const int totalNumOutputChannels = getTotalNumOutputChannels();
-
-        // In case we have more outputs than inputs, this code clears any output
-        // channels that didn't contain input data, (because these aren't
-        // guaranteed to be empty - they may contain garbage).
-        // This is here to avoid people getting screaming feedback
-        // when they first compile a plugin, but obviously you don't need to keep
-        // this code if your algorithm always overwrites all the output channels.
-        for (int i = numChannels; i < totalNumOutputChannels; ++i) {
-            buffer.clear(i, 0, buffer.getNumSamples());
-        }
-
-        int inputNumSamples = processedSampleBuffer.getNumSamples();
-        auto bufferSamplesRemaining = static_cast<int>(inputNumSamples - position);
-        int samplesThisTime = jmin(samplesPerBlock, bufferSamplesRemaining);
-
-        for (int channel = 0; channel < numChannels; ++channel) {
-            buffer.addFrom(channel, 0, processedSampleBuffer, channel, static_cast<int>(position), samplesThisTime,
-                           0.1);
-        }
-
-        position += samplesThisTime;
-        if (position >= inputNumSamples) {
+    if(!midiMessages.isEmpty()){
+        MidiMessage message;
+        int samplePosition;
+        MidiBuffer::Iterator(midiMessages).getNextEvent(message, samplePosition);
+        if(message.isNoteOn(false)){
             position = 0;
+            play = true;
+            printf("Note on!\n");
+        }
+        if(message.isNoteOff(false)){
+            printf("Note off!\n");
+            play = false;
+        }
+    }
+
+    if(play) {
+        buffer.clear();
+        midiMessages.clear();
+
+        if (numChannels > 0 && !processing) {
+            auto bufferSamplesRemaining = numSamples - position;
+            int samplesThisTime = jmin(samplesPerBlock, bufferSamplesRemaining);
+            
+            for (int channel = 0; channel < numChannels; channel++) {
+                buffer.addFrom(channel, 0, processedSampleBuffer, channel, position, samplesThisTime, 0.9);
+                filters[channel]->processSamples(buffer.getWritePointer(channel), samplesThisTime);
+            }
+
+            position += samplesThisTime;
+            if (position >= numSamples) {
+                play = false;
+            }
         }
     }
 }
@@ -167,7 +218,7 @@ bool RiseandfallAudioProcessor::hasEditor() const {
 }
 
 AudioProcessorEditor *RiseandfallAudioProcessor::createEditor() {
-    return new RiseandfallAudioProcessorEditor(*this);
+    return new RiseandfallAudioProcessorEditor(*this, parameters);
 }
 
 //==============================================================================
@@ -175,11 +226,40 @@ void RiseandfallAudioProcessor::getStateInformation(MemoryBlock &destData) {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    ScopedPointer<XmlElement> parent = new XmlElement(Identifier("RiseAndFallAllParams"));
+    ScopedPointer<XmlElement> xml = parameters.state.createXml();
+    ScopedPointer<XmlElement> filePathXML = new XmlElement(Identifier(FILE_PATH_ID));
+    filePathXML->setAttribute("path", filePath);
+
+    parent->addChildElement(xml);
+    parent->addChildElement(filePathXML);
+
+    copyXmlToBinary(*parent, destData);
+
+    parent->removeChildElement(xml, false);
+    parent->removeChildElement(filePathXML, false);
 }
 
 void RiseandfallAudioProcessor::setStateInformation(const void *data, int sizeInBytes) {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    printf("Set State Information.\n");
+    ScopedPointer<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    if (xmlState != nullptr) {
+        ScopedPointer<XmlElement> xml = xmlState->getChildByName(parameters.state.getType());
+        ScopedPointer<XmlElement> filePathXML = xmlState->getChildByName(FILE_PATH_ID);
+        if (xml != nullptr) {
+            parameters.state = ValueTree::fromXml(*xml);
+        }
+        if (filePathXML != nullptr) {
+            filePath = filePathXML->getStringAttribute("path");
+            File file(filePath);
+            loadSampleFromFile(file);
+        }
+
+        xmlState->removeChildElement(xml, false);
+        xmlState->removeChildElement(filePathXML, false);
+    }
 }
 
 //==============================================================================
@@ -198,129 +278,21 @@ AudioThumbnail *RiseandfallAudioProcessor::getThumbnail() {
     return &thumbnail;
 }
 
-void RiseandfallAudioProcessor::applyTimeWarp(AudioSampleBuffer *buffer, int factor) {
-    float realFactor = factor;
-    if (realFactor < 0) {
-        realFactor = 1 / abs(realFactor);
-    }
-
-    AudioSampleBuffer copy;
-    copy.makeCopyOf(*buffer);
-
-    soundTouch.setTempo(realFactor);
-    soundTouch.setPitch(1.0);
-
-    double ratio = soundTouch.getInputOutputSampleRatio();
-    buffer->setSize(buffer->getNumChannels(), static_cast<int>(ceil(buffer->getNumSamples() * ratio)), false, true,
-                    AVOID_REALLOCATING);
-
-    for (int channel = 0; channel < buffer->getNumChannels(); channel++) {
-        soundTouch.putSamples(copy.getReadPointer(channel), static_cast<uint>(copy.getNumSamples()));
-        soundTouch.receiveSamples(buffer->getWritePointer(channel), static_cast<uint>(buffer->getNumSamples()));
-        soundTouch.clear();
-    }
-}
-
-void RiseandfallAudioProcessor::applyDelay(AudioSampleBuffer *target, AudioSampleBuffer *base, float dampen,
-                                           int delayTimeInSamples, int iteration) {
-    base->applyGain(dampen);
-    if (base->getMagnitude(0, base->getNumSamples()) > 0.05) {
-        int currentDelayPosition = delayTimeInSamples * iteration;
-        int length = target->getNumSamples() + delayTimeInSamples;
-        target->setSize(target->getNumChannels(), length, true, true, true);
-
-        for (int channel = 0; channel < target->getNumChannels(); channel++) {
-            for (int i = 0; i < base->getNumSamples(); i++) {
-                target->addSample(channel, i + currentDelayPosition, base->getSample(channel, i));
-            }
-        }
-
-        applyDelay(target, base, dampen, delayTimeInSamples, iteration + 1);
-    }
-}
-
-void RiseandfallAudioProcessor::applyReverb(AudioSampleBuffer *target, const char *fileName, const size_t fileSize) {
-    AudioSampleBuffer copy;
-    copy.makeCopyOf(*target);
-
-    int processedSize = static_cast<int>(fileSize) + copy.getNumSamples() - 1;
-    target->setSize(target->getNumChannels(), processedSize, false, true, AVOID_REALLOCATING);
-
-    ProcessSpec processSpec = {sampleRate, static_cast<uint32>(processedSize),
-                               static_cast<uint32>(target->getNumChannels())};
-
-    convolution.prepare(processSpec);
-    convolution.loadImpulseResponse(fileName, fileSize, false, true, 0);
-
-    AudioBlock<float> audioBlockIn = AudioBlock<float>(copy);
-    AudioBlock<float> audioBlockOut = AudioBlock<float>(*target);
-    ProcessContextNonReplacing<float> processContext = ProcessContextNonReplacing<float>(audioBlockIn, audioBlockOut);
-    convolution.process(processContext);
-}
-
-void RiseandfallAudioProcessor::warp() {
-    // RISE
-    if (guiParams.riseTimeWarp != 0) {
-        applyTimeWarp(&riseSampleBuffer, guiParams.riseTimeWarp);
-    }
-
-    // FALL
-    if (guiParams.fallTimeWarp != 0) {
-        applyTimeWarp(&fallSampleBuffer, guiParams.fallTimeWarp);
-    }
-}
-
-void RiseandfallAudioProcessor::delayEffect() {
-    AudioSampleBuffer delayBaseTempBuffer;
-    float delayFeedbackNormalized = guiParams.delayFeedback / 100.0f;
-    float delayTimeNormalized = guiParams.delayTime / 1000.0f;
-    auto delayTimeInSamples = static_cast<int>(sampleRate * delayTimeNormalized);
-
-    // RISE
-    delayBaseTempBuffer.makeCopyOf(riseSampleBuffer);
-    applyDelay(&riseSampleBuffer, &delayBaseTempBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
-
-    // FALL
-    delayBaseTempBuffer.makeCopyOf(fallSampleBuffer);
-    applyDelay(&fallSampleBuffer, &delayBaseTempBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
-}
-
-void RiseandfallAudioProcessor::reverbEffect() {
-    const char *fileName = BinaryData::room_impulse_response_LBS_wav;
-    const size_t fileSize = BinaryData::room_impulse_response_LBS_wavSize;
-
-    // RISE
-    applyReverb(&riseSampleBuffer, fileName, fileSize);
-
-    // FALL
-    applyReverb(&fallSampleBuffer, fileName, fileSize);
-}
-
-void RiseandfallAudioProcessor::reverse() {
-    // RISE
-    if (guiParams.riseReverse) {
-        riseSampleBuffer.reverse(0, riseSampleBuffer.getNumSamples());
-    }
-
-    // FALL
-    if (guiParams.fallReverse) {
-        fallSampleBuffer.reverse(0, fallSampleBuffer.getNumSamples());
-    }
-}
-
 void RiseandfallAudioProcessor::concatenate() {
-    // TIME OFFSET
-    auto offsetNumSamples = static_cast<int>((guiParams.timeOffset / 1000) * sampleRate);
-    int processedSize = riseSampleBuffer.getNumSamples() + fallSampleBuffer.getNumSamples() + offsetNumSamples;
+    const clock_t start = clock();
 
-    processedSampleBuffer.setSize(numChannels, processedSize, false, true, AVOID_REALLOCATING);
+    // TIME OFFSET
+    auto offsetNumSamples = static_cast<int>((*parameters.getRawParameterValue(TIME_OFFSET_ID) / 1000) * sampleRate);
+   numSamples = riseSampleBuffer.getNumSamples() + fallSampleBuffer.getNumSamples() + offsetNumSamples;
+
+    processedSampleBuffer.setSize(numChannels, numSamples, false, true, AVOID_REALLOCATING);
 
     int overlapStart = riseSampleBuffer.getNumSamples() + offsetNumSamples;
     int overlapStop = overlapStart + abs(jmin(offsetNumSamples, 0));
     int overlapLength = overlapStop - overlapStart;
 
     for (int i = 0; i < numChannels; i++) {
-        for (int j = 0; j < overlapStart; j++) {
+        for (int j = 0; j < overlapStart && j < riseSampleBuffer.getNumSamples(); j++) {
             float value = riseSampleBuffer.getSample(i, j);
             processedSampleBuffer.setSample(i, j, value);
         }
@@ -335,41 +307,157 @@ void RiseandfallAudioProcessor::concatenate() {
             processedSampleBuffer.setSample(i, overlapStop + j, value);
         }
     }
+
+    printf("concat elapsed: %.2lf ms\n", float(clock() - start) / CLOCKS_PER_SEC);
 }
 
 void RiseandfallAudioProcessor::updateThumbnail() {
-    thumbnail.reset(numChannels, sampleRate, processedSampleBuffer.getNumSamples());
-    thumbnail.addBlock(0, processedSampleBuffer, 0, processedSampleBuffer.getNumSamples());
+    thumbnail.reset(numChannels, sampleRate, numSamples);
+    thumbnail.addBlock(0, processedSampleBuffer, 0, numSamples);
 }
 
 
-void RiseandfallAudioProcessor::normalizeSample() {
-    float magnitude = originalSampleBuffer.getMagnitude(0, originalSampleBuffer.getNumSamples());
-    originalSampleBuffer.applyGain(1 / magnitude);
+void RiseandfallAudioProcessor::normalizeSample(AudioSampleBuffer &buffer) {
+    float magnitude = buffer.getMagnitude(0, buffer.getNumSamples());
+    buffer.applyGain(1 / magnitude);
 }
 
 
 void RiseandfallAudioProcessor::processSample() {
-    if (!processing) {
-        processing = true;
-        riseSampleBuffer.makeCopyOf(originalSampleBuffer);
-        fallSampleBuffer.makeCopyOf(originalSampleBuffer);
-        position = 0;
-        warp();
-        delayEffect();
-        reverbEffect();
-        reverse();
-        concatenate();
-        updateThumbnail();
-        processing = false;
+    if (numChannels > 0 && sampleRate > 0) {
+        if (!processing) {
+            processing = true;
+            const clock_t start = clock();
+            printf("BLOCK START\n");
+
+            riseSampleBuffer.makeCopyOf(originalSampleBuffer);
+            fallSampleBuffer.makeCopyOf(originalSampleBuffer);
+
+            ProcessingThreadPoolJob risePoolJob(RISE, riseSampleBuffer, parameters, sampleRate);
+            ProcessingThreadPoolJob fallPoolJob(FALL, fallSampleBuffer, parameters, sampleRate);
+
+            pool.addJob(&risePoolJob, false);
+            pool.addJob(&fallPoolJob, false);
+
+            bool riseJobFinished = pool.waitForJobToFinish(&risePoolJob, 60000);
+            bool fallJobFinished = pool.waitForJobToFinish(&fallPoolJob, 60000);
+
+            if (riseJobFinished && fallJobFinished) {
+                riseSampleBuffer.makeCopyOf(risePoolJob.getOutputBuffer());
+                fallSampleBuffer.makeCopyOf(fallPoolJob.getOutputBuffer());
+                concatenate();
+                normalizeSample(processedSampleBuffer);
+                position = 0;
+                numSamples = processedSampleBuffer.getNumSamples();
+                
+                int i = 0;
+                bool silent;
+                do {
+                    silent = false;
+                    for(int channel = 0; channel < numChannels; channel++){
+                        silent |= processedSampleBuffer.getSample(channel, i) <= 0.0001;
+                    }
+                    i++;
+                } while (silent && i < numSamples);
+                
+                numSamples -= i;
+                
+                AudioSampleBuffer copy;
+                copy.setDataToReferTo(processedSampleBuffer.getArrayOfWritePointers(), numChannels, i, numSamples);
+                processedSampleBuffer.makeCopyOf(copy);
+                
+                i = numSamples - 1;
+                do {
+                    silent = false;
+                    for(int channel = 0; channel < numChannels; channel++){
+                        silent |= processedSampleBuffer.getSample(channel, i) <= 0.0001;
+                    }
+                    i--;
+                } while (silent && i >= 0);
+                
+                numSamples = i;
+                
+                copy.setDataToReferTo(processedSampleBuffer.getArrayOfWritePointers(), numChannels, 0, numSamples);
+                processedSampleBuffer.makeCopyOf(copy);
+                
+                printf("BLOCK END: %.2f ms\n\n", float(clock() - start) / CLOCKS_PER_SEC);
+                updateThumbnail();
+                processing = false;
+            } else {
+                printf("Thread pool timed out after 60 seconds.\n");
+            }
+        } else {
+            printf("Interrupting all jobs.\n");
+            while (!pool.removeAllJobs(true, 2000)) {
+                // wait until all jobs are removed
+                printf("Still trying to interrupting all jobs.\n");
+            }
+            processing = false;
+            processSample();
+        }
     }
 }
 
 void RiseandfallAudioProcessor::newSampleLoaded() {
-    position = 0;
+    printf("New Sample Loaded\n");
     numChannels = originalSampleBuffer.getNumChannels();
-    if (numChannels > 0) {
-        normalizeSample();
-        processSample();
+    for(int i=0; i < numChannels; i++){
+        filters.add(new IIRFilter());
+    }
+    processSample();
+}
+
+void RiseandfallAudioProcessor::loadSampleFromFile(File &file) {
+    filePath = file.getFullPathName();
+    printf("Load file: %s\n", filePath.toStdString().c_str());
+    ScopedPointer<AudioFormatReader> reader = formatManager.createReaderFor(file);
+    const double duration = reader->lengthInSamples / reader->sampleRate;
+
+    if (duration < 20) {
+        originalSampleBuffer.setSize(reader->numChannels,
+                                     static_cast<int>(reader->lengthInSamples));
+        reader->read(&originalSampleBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+        newSampleLoaded();
+    } else {
+        // handle the error that the file is 20 seconds or longer..
+    }
+}
+
+void RiseandfallAudioProcessor::audioProcessorParameterChanged(AudioProcessor *processor, int parameterIndex,
+                                                               float newValue) {
+    if(sampleRate > 0){
+        const String id = processor->getParameterID(parameterIndex);
+        if(id == FILTER_CUTOFF_ID || id == FILTER_RESONANCE_ID || id == FILTER_TYPE_ID){
+            int filterType = static_cast<int>(*parameters.getRawParameterValue(FILTER_TYPE_ID));
+            float cutoff = *parameters.getRawParameterValue(FILTER_CUTOFF_ID);
+            float resonance = *parameters.getRawParameterValue(FILTER_RESONANCE_ID);
+            
+            switch (filterType){
+                case 0:
+                    coeffs = IIRCoefficients::makeLowPass(sampleRate, cutoff, resonance);
+                    break;
+                case 1:
+                    coeffs = IIRCoefficients::makeHighPass(sampleRate, cutoff, resonance);
+                    break;
+                default:
+                    break;
+            }
+            
+            for(int i=0; i < numChannels; i++){
+                filters[i]->setCoefficients(coeffs);
+            }
+        }
+    }
+}
+
+void RiseandfallAudioProcessor::audioProcessorChanged(AudioProcessor *processor) {
+    //do nothing
+}
+
+void RiseandfallAudioProcessor::audioProcessorParameterChangeGestureEnd(AudioProcessor *processor, int parameterIndex) {
+    AudioProcessorListener::audioProcessorParameterChangeGestureEnd(processor, parameterIndex);
+    const String id = processor->getParameterID(parameterIndex);
+    if(id != FILTER_CUTOFF_ID && id != FILTER_RESONANCE_ID && id != FILTER_TYPE_ID){
+        this->processSample();
     }
 }

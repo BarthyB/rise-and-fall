@@ -15,24 +15,16 @@
 #include "GUIParams.h"
 #include "../Lib/SoundTouch/SoundTouch.h"
 
-using namespace soundtouch;
-using namespace dsp;
-
 //==============================================================================
 /**
 */
-class RiseandfallAudioProcessor : public AudioProcessor {
+class RiseandfallAudioProcessor : public AudioProcessor, public AudioProcessorListener {
 public:
-
-    /**
-     * Contains all extracted parameters from the GUI
-     */
-    GUIParams guiParams;
 
     //==============================================================================
     RiseandfallAudioProcessor();
 
-    ~RiseandfallAudioProcessor();
+    ~RiseandfallAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -98,12 +90,19 @@ public:
      */
     void newSampleLoaded();
 
+    void loadSampleFromFile(File &file);
+
     /**
      * Cascade the multiple audio processing algorithms
      */
     void processSample();
 
 private:
+
+    /**
+     * Thread pool to execute multiple tasks at once and to separate GUI Threads from Processing threads
+     */
+    ThreadPool pool{2};
 
     /**
      * Buffer containing the samples of the original audio file
@@ -139,11 +138,13 @@ private:
      * Number of channels in the original audio file
      */
     int numChannels;
+    
+    int numSamples;
 
     /**
      * Current position in the processing of sample blocks
      */
-    uint64 position;
+    int position;
 
     /**
      * Handles basic audio formats (wav, aiff)
@@ -160,22 +161,21 @@ private:
      */
     AudioThumbnail thumbnail;
 
-    /**
-     * SoundTouch instance for time warping
-     */
-    SoundTouch soundTouch;
+    AudioProcessorValueTreeState parameters;
 
-    /**
-     * Convolution engine for the reverb effect
-     */
-    Convolution convolution;
+    String filePath = "";
 
     /**
      * Block processing of the sample if it is already in process
      */
     bool processing;
 
-    void normalizeSample();
+    bool play;
+    
+    OwnedArray<IIRFilter> filters;
+    IIRCoefficients coeffs;
+
+    void normalizeSample(AudioSampleBuffer &buffer);
 
     /**
      * Clone the processed audio, reverse it and finally prepend it to the processed audio buffer
@@ -183,54 +183,13 @@ private:
     void concatenate();
 
     /**
-     * Apply Time warp to the rise and fall buffers
-     */
-    void warp();
-
-    /**
-     * Calculate the delay effect for the rise and fall buffers
-     */
-    void delayEffect();
-
-    /**
-     * Calculate the reverb effect for the rise and fall buffers
-     */
-    void reverbEffect();
-
-    /**
-     * Reverse the rise and/or fall buffers
-     */
-    void reverse();
-
-    /**
-     * Warp audio samples to change the speed and pitch
-     *
-     * @param buffer
-     * @param factor
-     */
-    void applyTimeWarp(AudioSampleBuffer *buffer, int factor);
-
-    /**
-     *
-     * @param target
-     * @param base
-     * @param dampen
-     * @param delayTimeInSamples
-     * @param iteration
-     */
-    void
-    applyDelay(AudioSampleBuffer *target, AudioSampleBuffer *base, float dampen, int delayTimeInSamples, int iteration);
-
-    /**
-     *
-     * @param target
-     */
-    void applyReverb(AudioSampleBuffer *target, const char *fileName, size_t fileSize);
-
-    /**
      * Update the thumbnail image
      */
     void updateThumbnail();
+
+    void audioProcessorParameterChanged(AudioProcessor *processor, int parameterIndex, float newValue) override;
+    void audioProcessorChanged (AudioProcessor* processor) override;
+    void audioProcessorParameterChangeGestureEnd(AudioProcessor* processor, int parameterIndex) override;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessor)
