@@ -24,7 +24,8 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 class RiseandfallAudioProcessorEditor :
         public AudioProcessorEditor,
         public Button::Listener,
-        public ChangeListener {
+        public ChangeListener,
+        public Value::Listener {
 public:
     RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &, AudioProcessorValueTreeState& vts);
 
@@ -76,6 +77,10 @@ private:
 
     AudioFormatManager formatManager;
 
+    const Rectangle<int> thumbnailBounds;
+    double positionSeconds;
+    int positionPixels;
+
     void initSlider(Slider *slider, const String &label, const String &suffix, bool logarithmic, bool linear);
 
     void initComboBox(ComboBox *comboBox, const String &label, const StringArray *items);
@@ -88,6 +93,7 @@ private:
 
     void loadFileButtonCLicked();
 
+    void valueChanged(Value & v) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };

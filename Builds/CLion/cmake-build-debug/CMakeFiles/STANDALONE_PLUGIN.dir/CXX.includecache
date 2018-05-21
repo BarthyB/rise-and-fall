@@ -67,8 +67,6 @@ mpe/juce_MPEValue.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEValue.h
 mpe/juce_MPENote.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPENote.h
-mpe/juce_MPEZone.h
-/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEZone.h
 mpe/juce_MPEZoneLayout.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEZoneLayout.h
 mpe/juce_MPEInstrument.h
@@ -81,6 +79,8 @@ mpe/juce_MPESynthesiserVoice.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPESynthesiserVoice.h
 mpe/juce_MPESynthesiser.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPESynthesiser.h
+mpe/juce_MPEUtils.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEUtils.h
 sources/juce_AudioSource.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/sources/juce_AudioSource.h
 sources/juce_PositionableAudioSource.h
@@ -130,9 +130,9 @@ audio_play_head/juce_AudioPlayHead.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPESynthesiserVoice.h
 
-/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEValue.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEUtils.h
 
-/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEZone.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEValue.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_audio_basics/mpe/juce_MPEZoneLayout.h
 
@@ -673,6 +673,8 @@ text/juce_Base64.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/text/juce_Base64.h
 misc/juce_Result.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_Result.h
+misc/juce_Uuid.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_Uuid.h
 containers/juce_Variant.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/containers/juce_Variant.h
 containers/juce_NamedValueSet.h
@@ -733,8 +735,6 @@ maths/juce_Random.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/maths/juce_Random.h
 misc/juce_RuntimePermissions.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_RuntimePermissions.h
-misc/juce_Uuid.h
-/Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_Uuid.h
 misc/juce_WindowsRegistry.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_WindowsRegistry.h
 threads/juce_ChildProcess.h
@@ -777,6 +777,8 @@ network/juce_URL.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/network/juce_URL.h
 network/juce_WebInputStream.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/network/juce_WebInputStream.h
+streams/juce_URLInputSource.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_core/streams/juce_URLInputSource.h
 system/juce_SystemStats.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/system/juce_SystemStats.h
 time/juce_PerformanceCounter.h
@@ -942,6 +944,8 @@ shlobj.h
 shlwapi.h
 -
 mmsystem.h
+-
+winioctl.h
 -
 basetyps.h
 -
@@ -1132,6 +1136,8 @@ CoreFoundation/CFAvailability.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/streams/juce_SubregionStream.h
 
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_core/streams/juce_URLInputSource.h
+
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/system/juce_CompilerSupport.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/system/juce_PlatformDefs.h
@@ -1150,6 +1156,8 @@ functional
 algorithm
 -
 limits
+-
+atomic
 -
 juce_CompilerSupport.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/system/juce_CompilerSupport.h
@@ -1183,8 +1191,6 @@ byteswap.h
 -
 ../misc/juce_StdFunctionCompat.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/misc/juce_StdFunctionCompat.h
-atomic
--
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_core/system/juce_SystemStats.h
 
@@ -1901,6 +1907,8 @@ properties/juce_SliderPropertyComponent.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_SliderPropertyComponent.h
 properties/juce_TextPropertyComponent.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_TextPropertyComponent.h
+properties/juce_MultiChoicePropertyComponent.h
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_MultiChoicePropertyComponent.h
 application/juce_Application.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/application/juce_Application.h
 misc/juce_BubbleComponent.h
@@ -2063,6 +2071,8 @@ layout/juce_Grid.h
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_ButtonPropertyComponent.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_ChoicePropertyComponent.h
+
+/Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_MultiChoicePropertyComponent.h
 
 /Users/Barthy/GitHub/VST/JUCE/modules/juce_gui_basics/properties/juce_PropertyComponent.h
 

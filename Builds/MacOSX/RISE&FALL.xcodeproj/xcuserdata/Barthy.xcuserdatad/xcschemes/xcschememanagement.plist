@@ -7,7 +7,7 @@
 		<key>RISE&amp;FALL - AU.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>2</integer>
 		</dict>
 		<key>RISE&amp;FALL - All.xcscheme</key>
 		<dict>
@@ -27,7 +27,7 @@
 		<key>RISE&amp;FALL - VST.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>1</integer>
 		</dict>
 		<key>RISE&amp;FALL - VST3.xcscheme</key>
 		<dict>

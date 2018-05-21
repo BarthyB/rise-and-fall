@@ -46,8 +46,9 @@ void RiseandfallAudioProcessorEditor::initToggleButton(ToggleButton *toggleButto
 }
 
 //==============================================================================
-RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &p, AudioProcessorValueTreeState& vts)
-        : AudioProcessorEditor(&p), processor(p), valueTreeState(vts) {
+RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &p,
+                                                                 AudioProcessorValueTreeState &vts)
+        : AudioProcessorEditor(&p), processor(p), valueTreeState(vts), thumbnailBounds(16, 536, 656, 144) {
 
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -57,23 +58,23 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     initSlider(&timeOffsetSlider, "TIME OFFSET", customLookAndFeel.DIMENSION_MS, false, true);
     timeOffsetSliderAttachment = new SliderAttachment(valueTreeState, TIME_OFFSET_ID, timeOffsetSlider);
 
-    initSlider(&riseTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES);
+    initSlider(&riseTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES, false, false);
     riseTimeWarpSliderAttachment = new SliderAttachment(valueTreeState, RISE_TIME_WARP_ID, riseTimeWarpSlider);
-    initSlider(&fallTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES);
+    initSlider(&fallTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES, false, false);
     fallTimeWarpSliderAttachment = new SliderAttachment(valueTreeState, FALL_TIME_WARP_ID, fallTimeWarpSlider);
 
-    initSlider(&reverbMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT);
+    initSlider(&reverbMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT, false, false);
     reverbMixSliderAttachment = new SliderAttachment(valueTreeState, REVERB_MIX_ID, reverbMixSlider);
-    initSlider(&delayMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT);
+    initSlider(&delayMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT, false, false);
     delayMixSliderAttachment = new SliderAttachment(valueTreeState, DELAY_MIX_ID, delayMixSlider);
-    initSlider(&delayTimeSlider, "TIME", customLookAndFeel.DIMENSION_MS);
+    initSlider(&delayTimeSlider, "TIME", customLookAndFeel.DIMENSION_MS, false, false);
     delayTimeSliderAttachment = new SliderAttachment(valueTreeState, DELAY_TIME_ID, delayTimeSlider);
-    initSlider(&delayFeedbackSlider, "FEEDBACK", customLookAndFeel.DIMENSION_PERCENT);
+    initSlider(&delayFeedbackSlider, "FEEDBACK", customLookAndFeel.DIMENSION_PERCENT, false, false);
     delayFeedbackSliderAttachment = new SliderAttachment(valueTreeState, DELAY_FEEDBACK_ID, delayFeedbackSlider);
 
-    initSlider(&filterCutoffSlider, "CUTOFF", customLookAndFeel.DIMENSION_HERTZ, true);
+    initSlider(&filterCutoffSlider, "CUTOFF", customLookAndFeel.DIMENSION_HERTZ, true, false);
     filterCutoffSliderAttachment = new SliderAttachment(valueTreeState, FILTER_CUTOFF_ID, filterCutoffSlider);
-    initSlider(&filterResonanceSlider, "RESONANCE (Q)", "", true);
+    initSlider(&filterResonanceSlider, "RESONANCE (Q)", "", true, false);
     filterResonanceSliderAttachment = new SliderAttachment(valueTreeState, FILTER_RESONANCE_ID, filterResonanceSlider);
 
     const ScopedPointer<StringArray> impResItems = new StringArray(
@@ -108,6 +109,10 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     addAndMakeVisible(&loadFileButton);
     processor.getThumbnail()->addChangeListener(this);
     formatManager.registerBasicFormats();
+
+    processor.getPosition().addListener(this);
+    positionSeconds = 0;
+    positionPixels = 0;
 }
 
 RiseandfallAudioProcessorEditor::~RiseandfallAudioProcessorEditor() {
@@ -122,12 +127,15 @@ void RiseandfallAudioProcessorEditor::paint(Graphics &g) {
     g.setColour(customLookAndFeel.COLOUR_WHITE);
     g.setFont(fontSize);
 
-    const Rectangle<int> thumbnailBounds(16, 536, 656, 144);
-
     if (processor.getOriginalSampleBuffer()->getNumChannels() != 0) {
         g.setColour(customLookAndFeel.COLOUR_RED);
         processor.getThumbnail()->drawChannels(g, thumbnailBounds, 0.0, processor.getThumbnail()->getTotalLength(),
                                                1.0f);
+    }
+
+    if (positionSeconds > 0) {
+        g.setColour(customLookAndFeel.COLOUR_BLACK);
+        g.fillRect(positionPixels, 528, 1, 696);
     }
 }
 
@@ -160,7 +168,7 @@ void RiseandfallAudioProcessorEditor::resized() {
 }
 
 void RiseandfallAudioProcessorEditor::loadFileButtonCLicked() {
-    FileChooser chooser("Select a Wave file", File::nonexistent, "*.wav");
+    FileChooser chooser("Select a Wave file", {}, "*.wav");
     if (chooser.browseForFileToOpen()) {
         File file(chooser.getResult());
         processor.loadSampleFromFile(file);
@@ -176,5 +184,22 @@ void RiseandfallAudioProcessorEditor::buttonClicked(Button *button) {
 void RiseandfallAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster *source) {
     if (source == processor.getThumbnail()) {
         repaint();
+    }
+}
+
+void RiseandfallAudioProcessorEditor::valueChanged(Value &v) {
+    double newPosition = v.getValue();
+    if (newPosition > 0) {
+        double newSeconds = newPosition / processor.getIntegerSampleRate();
+        if (newSeconds > positionSeconds) {
+            positionSeconds = newSeconds;
+            double percentage = positionSeconds / processor.getSampleDuration();
+            positionPixels = static_cast<int>(percentage * 656) + 16;
+            repaint(thumbnailBounds);
+        }
+    } else {
+        positionSeconds = 0;
+        positionPixels = 0;
+        repaint(thumbnailBounds);
     }
 }

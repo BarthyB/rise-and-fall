@@ -107,11 +107,9 @@ ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
         applyDelay(bufferIn, delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
         printf("%d delay elapsed: %.2lf ms\n", type, float(clock() - start) / CLOCKS_PER_SEC);
 
-        /*
         start = clock();
         applyReverb(bufferIn, BinaryData::room_impulse_response_LBS_wav, BinaryData::room_impulse_response_LBS_wavSize);
         printf("%d reverb elapsed: %.2lf ms\n", type, float( clock () - start ) /  CLOCKS_PER_SEC);
-         */
     }
 
     if ((type == RISE && *parameters.getRawParameterValue(RISE_REVERSE_ID)) ||

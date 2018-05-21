@@ -85,11 +85,22 @@ public:
      */
     AudioThumbnail *getThumbnail();
 
+    Value &getPosition();
+
+    int getIntegerSampleRate();
+
+    int getSampleDuration();
+
     /**
      * Reset the position and set the new number of samples and channels
      */
     void newSampleLoaded();
 
+    /**
+     * Load an audio sample from a file
+     *
+     * @param file
+     */
     void loadSampleFromFile(File &file);
 
     /**
@@ -138,13 +149,16 @@ private:
      * Number of channels in the original audio file
      */
     int numChannels;
-    
+
+    /**
+     * Number of samples in the original audio file
+     */
     int numSamples;
 
     /**
      * Current position in the processing of sample blocks
      */
-    int position;
+    Value position;
 
     /**
      * Handles basic audio formats (wav, aiff)
@@ -161,8 +175,14 @@ private:
      */
     AudioThumbnail thumbnail;
 
+    /**
+     * Stores all the parameters
+     */
     AudioProcessorValueTreeState parameters;
 
+    /**
+     * The loaded sample's file path
+     */
     String filePath = "";
 
     /**
@@ -170,11 +190,26 @@ private:
      */
     bool processing;
 
+    /**
+     * Whether the plugin should start playback or not
+     */
     bool play;
-    
+
+    /**
+     * Array of filters (one for each channel)
+     */
     OwnedArray<IIRFilter> filters;
+
+    /**
+     * Infinite Impulse Response Filter Coefficients
+     */
     IIRCoefficients coeffs;
 
+    /**
+     * Normalize the buffer
+     *
+     * @param buffer
+     */
     void normalizeSample(AudioSampleBuffer &buffer);
 
     /**
@@ -187,8 +222,28 @@ private:
      */
     void updateThumbnail();
 
+    /**
+     * Act when a parameter changes
+     *
+     * @param processor
+     * @param parameterIndex
+     * @param newValue
+     */
     void audioProcessorParameterChanged(AudioProcessor *processor, int parameterIndex, float newValue) override;
+
+    /**
+     * Act when the whole processor changes
+     *
+     * @param processor
+     */
     void audioProcessorChanged (AudioProcessor* processor) override;
+
+    /**
+     * Act when a gesture changing a parameter ends
+     *
+     * @param processor
+     * @param parameterIndex
+     */
     void audioProcessorParameterChangeGestureEnd(AudioProcessor* processor, int parameterIndex) override;
 
     //==============================================================================

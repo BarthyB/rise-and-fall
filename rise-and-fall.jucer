@@ -11,57 +11,56 @@
               pluginIsSynth="1" pluginWantsMidiIn="1" pluginProducesMidiOut="0"
               pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="1" pluginAUExportPrefix="riseandfallAU"
               pluginRTASCategory="" aaxIdentifier="com.yourcompany.riseandfall"
-              pluginAAXCategory="AAX_ePlugInCategory_Dynamics" jucerVersion="5.2.1"
-              companyName="Barthy" companyWebsite="http://barthy.koeln" companyEmail="post@barthy.koeln">
+              pluginAAXCategory="2" jucerVersion="5.3.2" companyName="Barthy"
+              companyWebsite="http://barthy.koeln" companyEmail="post@barthy.koeln"
+              pluginFormats="buildVST,buildVST3,buildAU,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn,pluginEditorRequiresKeys">
   <MAINGROUP id="UHNwjp" name="RISE&amp;FALL">
     <GROUP id="{82B20B1B-AC74-0C47-3E9D-3777EEB27B6F}" name="Lib">
       <GROUP id="{55FDE5FE-A537-FB4E-F378-CB3B221A7A49}" name="SoundTouch">
-        <FILE id="BfhI9o" name="AAFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/AAFilter.cpp"/>
-        <FILE id="onaEk5" name="AAFilter.h" compile="0" resource="0" file="Lib/SoundTouch/AAFilter.h"/>
-        <FILE id="luNsXW" name="BPMDetect.cpp" compile="1" resource="0" file="Lib/SoundTouch/BPMDetect.cpp"/>
-        <FILE id="YfQnge" name="BPMDetect.h" compile="0" resource="0" file="Lib/SoundTouch/BPMDetect.h"/>
-        <FILE id="APqZmF" name="cpu_detect.h" compile="0" resource="0" file="Lib/SoundTouch/cpu_detect.h"/>
-        <FILE id="HCS7D8" name="cpu_detect_x86.cpp" compile="1" resource="0"
+        <FILE id="VZS7nH" name="AAFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/AAFilter.cpp"/>
+        <FILE id="t4zAIU" name="AAFilter.h" compile="0" resource="0" file="Lib/SoundTouch/AAFilter.h"/>
+        <FILE id="QG9xNY" name="BPMDetect.cpp" compile="1" resource="0" file="Lib/SoundTouch/BPMDetect.cpp"/>
+        <FILE id="YjMRxl" name="BPMDetect.h" compile="0" resource="0" file="Lib/SoundTouch/BPMDetect.h"/>
+        <FILE id="TxJPCT" name="cpu_detect.h" compile="0" resource="0" file="Lib/SoundTouch/cpu_detect.h"/>
+        <FILE id="LbJaXj" name="cpu_detect_x86.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/cpu_detect_x86.cpp"/>
-        <FILE id="eCRr10" name="FIFOSampleBuffer.cpp" compile="1" resource="0"
+        <FILE id="kDITy4" name="FIFOSampleBuffer.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/FIFOSampleBuffer.cpp"/>
-        <FILE id="RtrLhY" name="FIFOSampleBuffer.h" compile="0" resource="0"
+        <FILE id="SNxI8T" name="FIFOSampleBuffer.h" compile="0" resource="0"
               file="Lib/SoundTouch/FIFOSampleBuffer.h"/>
-        <FILE id="DgDrhG" name="FIFOSamplePipe.h" compile="0" resource="0"
+        <FILE id="OQeKJ4" name="FIFOSamplePipe.h" compile="0" resource="0"
               file="Lib/SoundTouch/FIFOSamplePipe.h"/>
-        <FILE id="rTysUy" name="FIRFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/FIRFilter.cpp"/>
-        <FILE id="oynqmb" name="FIRFilter.h" compile="0" resource="0" file="Lib/SoundTouch/FIRFilter.h"/>
-        <FILE id="V3c5yK" name="InterpolateCubic.cpp" compile="1" resource="0"
+        <FILE id="tlXxv2" name="FIRFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/FIRFilter.cpp"/>
+        <FILE id="UJNusa" name="FIRFilter.h" compile="0" resource="0" file="Lib/SoundTouch/FIRFilter.h"/>
+        <FILE id="rVCtnm" name="InterpolateCubic.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/InterpolateCubic.cpp"/>
-        <FILE id="gt5UeF" name="InterpolateCubic.h" compile="0" resource="0"
+        <FILE id="mnRn1o" name="InterpolateCubic.h" compile="0" resource="0"
               file="Lib/SoundTouch/InterpolateCubic.h"/>
-        <FILE id="vT0lvT" name="InterpolateLinear.cpp" compile="1" resource="0"
+        <FILE id="SvDuTd" name="InterpolateLinear.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/InterpolateLinear.cpp"/>
-        <FILE id="bNQv2Q" name="InterpolateLinear.h" compile="0" resource="0"
+        <FILE id="uaO8rm" name="InterpolateLinear.h" compile="0" resource="0"
               file="Lib/SoundTouch/InterpolateLinear.h"/>
-        <FILE id="SsHb5r" name="InterpolateShannon.cpp" compile="1" resource="0"
+        <FILE id="Ppxw2H" name="InterpolateShannon.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/InterpolateShannon.cpp"/>
-        <FILE id="dpYFWF" name="InterpolateShannon.h" compile="0" resource="0"
+        <FILE id="jbhOpU" name="InterpolateShannon.h" compile="0" resource="0"
               file="Lib/SoundTouch/InterpolateShannon.h"/>
-        <FILE id="IUlHsy" name="mmx_optimized.cpp" compile="1" resource="0"
+        <FILE id="uWtTz0" name="mmx_optimized.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/mmx_optimized.cpp"/>
-        <FILE id="pGahVq" name="PeakFinder.cpp" compile="1" resource="0" file="Lib/SoundTouch/PeakFinder.cpp"/>
-        <FILE id="d9yt3F" name="PeakFinder.h" compile="0" resource="0" file="Lib/SoundTouch/PeakFinder.h"/>
-        <FILE id="FH7KkB" name="RateTransposer.cpp" compile="1" resource="0"
+        <FILE id="W6zTLk" name="PeakFinder.cpp" compile="1" resource="0" file="Lib/SoundTouch/PeakFinder.cpp"/>
+        <FILE id="To8U2s" name="PeakFinder.h" compile="0" resource="0" file="Lib/SoundTouch/PeakFinder.h"/>
+        <FILE id="st9w4C" name="RateTransposer.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/RateTransposer.cpp"/>
-        <FILE id="juiU4B" name="RateTransposer.h" compile="0" resource="0"
+        <FILE id="bPlcje" name="RateTransposer.h" compile="0" resource="0"
               file="Lib/SoundTouch/RateTransposer.h"/>
-        <FILE id="YK3jtd" name="SoundTouch.cpp" compile="1" resource="0" file="Lib/SoundTouch/SoundTouch.cpp"/>
-        <FILE id="Rwgyfu" name="SoundTouch.h" compile="0" resource="0" file="Lib/SoundTouch/SoundTouch.h"/>
-        <FILE id="xVbHki" name="soundtouch_config.h" compile="0" resource="0"
+        <FILE id="ex1tv2" name="SoundTouch.cpp" compile="1" resource="0" file="Lib/SoundTouch/SoundTouch.cpp"/>
+        <FILE id="Kq4iI5" name="SoundTouch.h" compile="0" resource="0" file="Lib/SoundTouch/SoundTouch.h"/>
+        <FILE id="vHgObI" name="soundtouch_config.h" compile="0" resource="0"
               file="Lib/SoundTouch/soundtouch_config.h"/>
-        <FILE id="RwVZS3" name="soundtouch_config.h.in" compile="0" resource="1"
-              file="Lib/SoundTouch/soundtouch_config.h.in"/>
-        <FILE id="eEkat2" name="sse_optimized.cpp" compile="1" resource="0"
+        <FILE id="QeAJMs" name="sse_optimized.cpp" compile="1" resource="0"
               file="Lib/SoundTouch/sse_optimized.cpp"/>
-        <FILE id="hBJNk5" name="STTypes.h" compile="0" resource="0" file="Lib/SoundTouch/STTypes.h"/>
-        <FILE id="wmj23P" name="TDStretch.cpp" compile="1" resource="0" file="Lib/SoundTouch/TDStretch.cpp"/>
-        <FILE id="NttRqb" name="TDStretch.h" compile="0" resource="0" file="Lib/SoundTouch/TDStretch.h"/>
+        <FILE id="tWqIAm" name="STTypes.h" compile="0" resource="0" file="Lib/SoundTouch/STTypes.h"/>
+        <FILE id="AGxpDa" name="TDStretch.cpp" compile="1" resource="0" file="Lib/SoundTouch/TDStretch.cpp"/>
+        <FILE id="e05Csi" name="TDStretch.h" compile="0" resource="0" file="Lib/SoundTouch/TDStretch.h"/>
       </GROUP>
     </GROUP>
     <GROUP id="{E54CE0C6-4AE7-C673-6E88-4FC41715E328}" name="Source">
@@ -146,4 +145,7 @@
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
   <JUCEOPTIONS JUCE_QUICKTIME="disabled" JUCE_ASSERTION_FIRFILTER="1" JUCE_DSP_ENABLE_SNAP_TO_ZERO="1"/>
+  <LIVE_SETTINGS>
+    <OSX/>
+  </LIVE_SETTINGS>
 </JUCERPROJECT>
