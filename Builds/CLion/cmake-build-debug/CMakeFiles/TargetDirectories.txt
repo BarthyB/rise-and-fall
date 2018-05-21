@@ -1,7 +1,0 @@
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/STANDALONE_PLUGIN.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/VST3.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/SHARED_CODE.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/AU.dir
-/Users/Barthy/GitHub/VST/rise-and-fall/Builds/CLion/cmake-build-debug/CMakeFiles/VST.dir
