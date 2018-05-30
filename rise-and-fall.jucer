@@ -2,20 +2,34 @@
 
 <JUCERPROJECT id="eumelZ" name="RISE&amp;FALL" displaySplashScreen="1" reportAppUsage="1"
               splashScreenColour="Dark" projectType="audioplug" version="1.0.0"
-              bundleIdentifier="koeln.barthy.riseandfall" includeBinaryInAppConfig="1"
-              cppLanguageStandard="14" companyCopyright="Barthy" buildVST="1"
-              buildVST3="1" buildAU="1" buildAUv3="0" buildRTAS="0" buildAAX="0"
-              buildStandalone="1" enableIAA="0" pluginName="RISE&amp;FALL"
-              pluginDesc="VST Plugin for Build-Ups and Drops" pluginManufacturer="Barthy"
-              pluginManufacturerCode="BBKO" pluginCode="RIFA" pluginChannelConfigs=""
-              pluginIsSynth="1" pluginWantsMidiIn="1" pluginProducesMidiOut="0"
-              pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="1" pluginAUExportPrefix="riseandfallAU"
-              pluginRTASCategory="" aaxIdentifier="com.yourcompany.riseandfall"
+              bundleIdentifier="koeln.barthy.riseandfall" cppLanguageStandard="14"
+              companyCopyright="Barthy" buildVST="1" buildVST3="1" buildAU="1"
+              buildAUv3="0" buildRTAS="0" buildAAX="0" buildStandalone="1"
+              enableIAA="0" pluginName="RISE&amp;FALL" pluginDesc="VST Plugin for Build-Ups and Drops"
+              pluginManufacturer="Barthy" pluginManufacturerCode="BBKO" pluginCode="RIFA"
+              pluginChannelConfigs="" pluginIsSynth="1" pluginWantsMidiIn="1"
+              pluginProducesMidiOut="0" pluginIsMidiEffectPlugin="0" pluginEditorRequiresKeys="0"
+              pluginAUExportPrefix="riseandfallAU" pluginRTASCategory="" aaxIdentifier="koeln.barthy.riseandfall"
               pluginAAXCategory="2" jucerVersion="5.3.2" companyName="Barthy"
               companyWebsite="http://barthy.koeln" companyEmail="post@barthy.koeln"
-              pluginFormats="buildVST,buildVST3,buildAU,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn,pluginEditorRequiresKeys">
+              pluginFormats="buildVST,buildVST3,buildAU,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
+              pluginRTASDisableBypass="0" pluginRTASDisableMultiMono="0" pluginAAXDisableBypass="0"
+              pluginAAXDisableMultiMono="0" pluginAUMainType="'augn'">
   <MAINGROUP id="UHNwjp" name="RISE&amp;FALL">
     <GROUP id="{82B20B1B-AC74-0C47-3E9D-3777EEB27B6F}" name="Lib">
+      <GROUP id="{250A8187-CDFD-7FFF-73E7-D6CC21F9F3D1}" name="FFTConvolver">
+        <FILE id="Dwjyle" name="AudioFFT.cpp" compile="1" resource="0" file="Lib/FFTConvolver/AudioFFT.cpp"/>
+        <FILE id="b4OeFZ" name="AudioFFT.h" compile="0" resource="0" file="Lib/FFTConvolver/AudioFFT.h"/>
+        <FILE id="W4uh6x" name="FFTConvolver.cpp" compile="1" resource="0"
+              file="Lib/FFTConvolver/FFTConvolver.cpp"/>
+        <FILE id="pzVcS2" name="FFTConvolver.h" compile="0" resource="0" file="Lib/FFTConvolver/FFTConvolver.h"/>
+        <FILE id="YuY9nh" name="TwoStageFFTConvolver.cpp" compile="1" resource="0"
+              file="Lib/FFTConvolver/TwoStageFFTConvolver.cpp"/>
+        <FILE id="XZvhcM" name="TwoStageFFTConvolver.h" compile="0" resource="0"
+              file="Lib/FFTConvolver/TwoStageFFTConvolver.h"/>
+        <FILE id="zXyYcg" name="Utilities.cpp" compile="1" resource="0" file="Lib/FFTConvolver/Utilities.cpp"/>
+        <FILE id="uUXi5w" name="Utilities.h" compile="0" resource="0" file="Lib/FFTConvolver/Utilities.h"/>
+      </GROUP>
       <GROUP id="{55FDE5FE-A537-FB4E-F378-CB3B221A7A49}" name="SoundTouch">
         <FILE id="VZS7nH" name="AAFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/AAFilter.cpp"/>
         <FILE id="t4zAIU" name="AAFilter.h" compile="0" resource="0" file="Lib/SoundTouch/AAFilter.h"/>
@@ -81,8 +95,8 @@
     </GROUP>
     <GROUP id="{6A3CA5D5-E5D2-5947-8F83-09DC8FC3127D}" name="Resources">
       <FILE id="COTH0o" name="background.png" compile="1" resource="1" file="Resources/background.png"/>
-      <FILE id="bCfWN3" name="minster.wav" compile="0" resource="1" file="Resources/minster.wav"/>
-      <FILE id="Hf4jCF" name="room_impulse_response_LBS.wav" compile="0"
+      <FILE id="bCfWN3" name="minster.wav" compile="1" resource="1" file="Resources/minster.wav"/>
+      <FILE id="Hf4jCF" name="room_impulse_response_LBS.wav" compile="1"
             resource="1" file="Resources/room_impulse_response_LBS.wav"/>
     </GROUP>
   </MAINGROUP>
@@ -110,23 +124,6 @@
         <MODULEPATH id="juce_dsp" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
-    <CLION targetFolder="Builds/CLion" clionXcodeEnabled="1">
-      <MODULEPATHS>
-        <MODULEPATH id="juce_gui_extra" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_graphics" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_events" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_data_structures" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_core" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_utils" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_plugin_client" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
-        <MODULEPATH id="juce_dsp" path="../JUCE/modules"/>
-      </MODULEPATHS>
-    </CLION>
   </EXPORTFORMATS>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -144,7 +141,7 @@
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
-  <JUCEOPTIONS JUCE_QUICKTIME="disabled" JUCE_ASSERTION_FIRFILTER="1" JUCE_DSP_ENABLE_SNAP_TO_ZERO="1"/>
+  <JUCEOPTIONS JUCE_QUICKTIME="disabled"/>
   <LIVE_SETTINGS>
     <OSX/>
   </LIVE_SETTINGS>

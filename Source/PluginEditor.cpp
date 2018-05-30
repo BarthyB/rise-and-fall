@@ -129,8 +129,11 @@ void RiseandfallAudioProcessorEditor::paint(Graphics &g) {
 
     if (processor.getOriginalSampleBuffer()->getNumChannels() != 0) {
         g.setColour(customLookAndFeel.COLOUR_RED);
-        processor.getThumbnail()->drawChannels(g, thumbnailBounds, 0.0, processor.getThumbnail()->getTotalLength(),
-                                               1.0f);
+        processor.getThumbnail()->drawChannels(g, thumbnailBounds, 0.0, processor.getThumbnail()->getTotalLength(), 1.0f);
+    } else {
+        g.setColour(customLookAndFeel.COLOUR_BLACK);
+        g.setFont(fontSize);
+        g.drawFittedText("NO SAMPLE", thumbnailBounds, Justification::centred, 1);
     }
 
     if (positionSeconds > 0) {
@@ -195,11 +198,11 @@ void RiseandfallAudioProcessorEditor::valueChanged(Value &v) {
             positionSeconds = newSeconds;
             double percentage = positionSeconds / processor.getSampleDuration();
             positionPixels = static_cast<int>(percentage * 656) + 16;
-            repaint(thumbnailBounds);
+            repaint();
         }
     } else {
         positionSeconds = 0;
         positionPixels = 0;
-        repaint(thumbnailBounds);
+        repaint();
     }
 }

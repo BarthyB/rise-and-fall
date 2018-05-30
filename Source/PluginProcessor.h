@@ -95,6 +95,8 @@ public:
      * Reset the position and set the new number of samples and channels
      */
     void newSampleLoaded();
+    
+    void loadNewImpulseResponse(int id);
 
     /**
      * Load an audio sample from a file
@@ -134,6 +136,11 @@ private:
      * Buffer containing the final processed output audio
      */
     AudioSampleBuffer fallSampleBuffer;
+    
+    /**
+     * Buffer containing the final processed output audio
+     */
+    AudioSampleBuffer impulseResponseSampleBuffer;
 
     /**
      * Sample rate for the current block

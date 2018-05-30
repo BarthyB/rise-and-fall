@@ -8,77 +8,82 @@
 
 ProcessingThreadPoolJob::ProcessingThreadPoolJob(ThreadType type, AudioSampleBuffer &bufferIn,
                                                  AudioProcessorValueTreeState &vts,
-                                                 double sampleRate)
+                                                 double sampleRate,
+                                                 AudioSampleBuffer &impulseResponseSampleBuffer)
         : ThreadPoolJob("Processing Thread Pool Job"), parameters(vts) {
     this->type = type;
     this->bufferIn = bufferIn;
     this->sampleRate = sampleRate;
+    this->impulseResponseSampleBuffer = impulseResponseSampleBuffer;
+    this->convolvers.clear();
 
     soundTouch.setChannels(1); // always iterate over single channels
     soundTouch.setSampleRate(static_cast<uint>(sampleRate));
+            
+    printf("%d: Impulse Response: %d Channels, %d Samples, magnitude: %.2f\n", type, this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
+    printf("%d: Buffer: %d Channels, %d Samples, magnitude: %.2f\n", type, this->bufferIn.getNumChannels(), this->bufferIn.getNumSamples(), bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
+    
+    for (int i = 0; i < this->impulseResponseSampleBuffer.getNumChannels(); i++) {
+        convolvers.add(new fftconvolver::FFTConvolver());
+        convolvers[i]->init(512, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
+    }
 }
 
-void ProcessingThreadPoolJob::applyTimeWarp(AudioSampleBuffer &buffer, int factor) {
+void ProcessingThreadPoolJob::applyTimeWarp(int factor) {
     float realFactor = factor;
     if (realFactor < 0) {
         realFactor = 1 / abs(realFactor);
     }
 
-    printf("%d: Applying time warp with factor: %f\n", type, realFactor);
+    printf("%d: Applying time warp with factor: %.2f\n", type, realFactor);
 
     AudioSampleBuffer copy;
-    copy.makeCopyOf(buffer);
+    copy.makeCopyOf(bufferIn);
 
     soundTouch.setTempo(realFactor);
 
     double ratio = soundTouch.getInputOutputSampleRatio();
-    buffer.setSize(buffer.getNumChannels(), static_cast<int>(ceil(buffer.getNumSamples() * ratio)), false, true,
-                   AVOID_REALLOCATING);
+    bufferIn.setSize(bufferIn.getNumChannels(), static_cast<int>(ceil(bufferIn.getNumSamples() * ratio)), false, true, AVOID_REALLOCATING);
 
-    for (int channel = 0; channel < buffer.getNumChannels(); channel++) {
+    for (int channel = 0; channel < bufferIn.getNumChannels(); channel++) {
         soundTouch.putSamples(copy.getReadPointer(channel), static_cast<uint>(copy.getNumSamples()));
-        soundTouch.receiveSamples(buffer.getWritePointer(channel), static_cast<uint>(buffer.getNumSamples()));
+        soundTouch.receiveSamples(bufferIn.getWritePointer(channel), static_cast<uint>(bufferIn.getNumSamples()));
         soundTouch.clear();
     }
 }
 
-void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &target, AudioSampleBuffer &base, float dampen,
-                                         int delayTimeInSamples, int iteration) {
+void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &base, float dampen, int delayTimeInSamples, int iteration) {
     base.applyGain(dampen);
     if (base.getMagnitude(0, base.getNumSamples()) > 0.005) {
         int currentDelayPosition = delayTimeInSamples * iteration;
-        int length = target.getNumSamples() + base.getNumSamples() + delayTimeInSamples;
-        target.setSize(target.getNumChannels(), length, true, true, AVOID_REALLOCATING);
+        int length = bufferIn.getNumSamples() + base.getNumSamples() + delayTimeInSamples;
+        bufferIn.setSize(bufferIn.getNumChannels(), length, true, true, AVOID_REALLOCATING);
 
-        for (int channel = 0; channel < target.getNumChannels(); channel++) {
+        for (int channel = 0; channel < bufferIn.getNumChannels(); channel++) {
             for (int i = 0; i < base.getNumSamples(); i++) {
-                target.addSample(channel, i + currentDelayPosition, base.getSample(channel, i));
+                bufferIn.addSample(channel, i + currentDelayPosition, base.getSample(channel, i));
             }
         }
 
-        applyDelay(target, base, dampen, delayTimeInSamples, iteration + 1);
+        applyDelay(base, dampen, delayTimeInSamples, iteration + 1);
     } else {
-        printf("%d Delay processed after %d recursions\n", type, iteration);
+        printf("%d delay processed after %d recursions\n", type, iteration);
     }
 }
 
-void ProcessingThreadPoolJob::applyReverb(AudioSampleBuffer &target, const char *fileName, const size_t fileSize) {
+void ProcessingThreadPoolJob::applyReverb() {
     AudioSampleBuffer copy;
-    copy.makeCopyOf(target);
-
-    int processedSize = static_cast<int>(fileSize) + copy.getNumSamples() - 1;
-    target.setSize(target.getNumChannels(), processedSize, false, true, AVOID_REALLOCATING);
-
-    ProcessSpec processSpec = {sampleRate, static_cast<uint32>(processedSize),
-                               static_cast<uint32>(target.getNumChannels())};
-
-    convolution.prepare(processSpec);
-    convolution.loadImpulseResponse(fileName, fileSize, false, true, 0);
-
-    AudioBlock<float> audioBlockIn = AudioBlock<float>(copy);
-    AudioBlock<float> audioBlockOut = AudioBlock<float>(target);
-    ProcessContextNonReplacing<float> processContext = ProcessContextNonReplacing<float>(audioBlockIn, audioBlockOut);
-    convolution.process(processContext);
+    copy.makeCopyOf(bufferIn);
+    
+    int processedSize = impulseResponseSampleBuffer.getNumSamples() + copy.getNumSamples() - 1;
+    bufferIn.setSize(bufferIn.getNumChannels(), processedSize, false, true, AVOID_REALLOCATING);
+    
+    printf("magnitude before reverb: %f\n", bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
+    for (int i = 0; i < copy.getNumChannels(); i++) {
+        int impulseResponseChannelIndex = jmin(i, impulseResponseSampleBuffer.getNumChannels() - 1);
+        convolvers[impulseResponseChannelIndex]->process(copy.getReadPointer(i), bufferIn.getWritePointer(i), processedSize);
+    }
+    printf("magnitude after reverb: %f\n", bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
 }
 
 
@@ -88,35 +93,35 @@ ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
     float delayTimeNormalized = *parameters.getRawParameterValue(DELAY_TIME_ID) / 1000.0f;
     auto delayTimeInSamples = static_cast<int>(sampleRate * delayTimeNormalized);
     AudioSampleBuffer delayBaseBuffer;
-    delayBaseBuffer.makeCopyOf(bufferIn);
     clock_t start;
 
     auto effects = static_cast<bool>(*parameters.getRawParameterValue(
             (type == RISE) ? RISE_EFFECTS_ID : FALL_EFFECTS_ID));
 
     if (effects) {
-        auto timeWarp = static_cast<int>(*parameters.getRawParameterValue(
-                (type == RISE) ? RISE_TIME_WARP_ID : FALL_REVERSE_ID));
+        auto timeWarp = static_cast<int>(*parameters.getRawParameterValue((type == RISE) ? RISE_TIME_WARP_ID : FALL_REVERSE_ID));
         if (timeWarp != 0) {
             start = clock();
-            applyTimeWarp(bufferIn, timeWarp);
-            printf("%d time warp elapsed: %.2lf ms\n", type, float(clock() - start) / CLOCKS_PER_SEC);
+            applyTimeWarp(timeWarp);
+            printf("%d time warp elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
         }
-
+        
         start = clock();
-        applyDelay(bufferIn, delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
-        printf("%d delay elapsed: %.2lf ms\n", type, float(clock() - start) / CLOCKS_PER_SEC);
-
+        applyReverb();
+        printf("%d reverb elapsed: %.2lf s, magnitude %2.f\n", type, float( clock () - start ) /  CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
+        
         start = clock();
-        applyReverb(bufferIn, BinaryData::room_impulse_response_LBS_wav, BinaryData::room_impulse_response_LBS_wavSize);
-        printf("%d reverb elapsed: %.2lf ms\n", type, float( clock () - start ) /  CLOCKS_PER_SEC);
+        delayBaseBuffer.makeCopyOf(bufferIn);
+        applyDelay(delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
+        printf("%d delay elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
     }
 
-    if ((type == RISE && *parameters.getRawParameterValue(RISE_REVERSE_ID)) ||
-        (type == FALL && *parameters.getRawParameterValue(FALL_REVERSE_ID))) {
+    bool riseReverse = type == RISE && *parameters.getRawParameterValue(RISE_REVERSE_ID);
+    bool fallReverse = type == FALL && *parameters.getRawParameterValue(FALL_REVERSE_ID);
+    if (riseReverse || fallReverse) {
         start = clock();
         bufferIn.reverse(0, bufferIn.getNumSamples());
-        printf("%d reverse elapsed: %.2lf ms\n", type, float(clock() - start) / CLOCKS_PER_SEC);
+        printf("%d reverse elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
     }
 
     return jobHasFinished;
@@ -127,4 +132,3 @@ AudioSampleBuffer ProcessingThreadPoolJob::getOutputBuffer() {
 }
 
 ProcessingThreadPoolJob::~ProcessingThreadPoolJob() = default;
-

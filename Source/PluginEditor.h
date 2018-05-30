@@ -94,6 +94,6 @@ private:
     void loadFileButtonCLicked();
 
     void valueChanged(Value & v) override;
-
+            
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };
