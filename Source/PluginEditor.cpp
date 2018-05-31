@@ -63,9 +63,9 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     initSlider(&fallTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES, false, false);
     fallTimeWarpSliderAttachment = new SliderAttachment(valueTreeState, FALL_TIME_WARP_ID, fallTimeWarpSlider);
 
-    initSlider(&reverbMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT, false, false);
+    initSlider(&reverbMixSlider, "MIX / WET", customLookAndFeel.DIMENSION_PERCENT, false, false);
     reverbMixSliderAttachment = new SliderAttachment(valueTreeState, REVERB_MIX_ID, reverbMixSlider);
-    initSlider(&delayMixSlider, "MIX", customLookAndFeel.DIMENSION_PERCENT, false, false);
+    initSlider(&delayMixSlider, "MIX / WET", customLookAndFeel.DIMENSION_PERCENT, false, false);
     delayMixSliderAttachment = new SliderAttachment(valueTreeState, DELAY_MIX_ID, delayMixSlider);
     initSlider(&delayTimeSlider, "TIME", customLookAndFeel.DIMENSION_MS, false, false);
     delayTimeSliderAttachment = new SliderAttachment(valueTreeState, DELAY_TIME_ID, delayTimeSlider);
@@ -143,7 +143,7 @@ void RiseandfallAudioProcessorEditor::paint(Graphics &g) {
 }
 
 void RiseandfallAudioProcessorEditor::resized() {
-    timeOffsetSlider.setBounds(368, 464, 288, 46);
+    timeOffsetSlider.setBounds(238, 464, 418, 46);
 
     riseTimeWarpSlider.setBounds(232, 320, sliderWidth, sliderHeight);
     fallTimeWarpSlider.setBounds(568, 320, sliderWidth, sliderHeight);
@@ -192,17 +192,9 @@ void RiseandfallAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster *
 
 void RiseandfallAudioProcessorEditor::valueChanged(Value &v) {
     double newPosition = v.getValue();
-    if (newPosition > 0) {
-        double newSeconds = newPosition / processor.getIntegerSampleRate();
-        if (newSeconds > positionSeconds) {
-            positionSeconds = newSeconds;
-            double percentage = positionSeconds / processor.getSampleDuration();
-            positionPixels = static_cast<int>(percentage * 656) + 16;
-            repaint();
-        }
-    } else {
-        positionSeconds = 0;
-        positionPixels = 0;
-        repaint();
-    }
+    double newSeconds = newPosition / processor.getIntegerSampleRate();
+    positionSeconds = newSeconds;
+    double percentage = positionSeconds / processor.getSampleDuration();
+    positionPixels = static_cast<int>(percentage * 656) + 16;
+    repaint(thumbnailBounds.expanded(30));
 }

@@ -223,6 +223,8 @@ private:
      * Clone the processed audio, reverse it and finally prepend it to the processed audio buffer
      */
     void concatenate();
+    
+    void trim();
 
     /**
      * Update the thumbnail image

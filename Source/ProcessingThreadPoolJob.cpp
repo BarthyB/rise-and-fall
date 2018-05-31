@@ -3,7 +3,7 @@
 //
 
 #define AVOID_REALLOCATING false
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 1024
 
 #include "ProcessingThreadPoolJob.h"
 
@@ -22,8 +22,8 @@ ProcessingThreadPoolJob::ProcessingThreadPoolJob(ThreadType type, AudioSampleBuf
     soundTouch.setSampleRate(static_cast<uint>(sampleRate));
     
     for (int i = 0; i < this->impulseResponseSampleBuffer.getNumChannels(); i++) {
-        convolvers.add(new fftconvolver::FFTConvolver());
-        convolvers[i]->init(BUFFER_SIZE, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
+        convolvers.add(new fftconvolver::TwoStageFFTConvolver());
+        convolvers[i]->init(BUFFER_SIZE, BUFFER_SIZE, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
     }
 }
 
@@ -32,8 +32,6 @@ void ProcessingThreadPoolJob::applyTimeWarp(int factor) {
     if (realFactor < 0) {
         realFactor = 1 / abs(realFactor);
     }
-
-    printf("%d: Applying time warp with factor: %.2f\n", type, realFactor);
 
     AudioSampleBuffer copy;
     copy.makeCopyOf(bufferIn);
@@ -56,7 +54,7 @@ void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &base, float dampen, 
         int currentDelayPosition = delayTimeInSamples * iteration;
         int length = bufferIn.getNumSamples() + base.getNumSamples() + delayTimeInSamples;
         bufferIn.setSize(bufferIn.getNumChannels(), length, true, true, AVOID_REALLOCATING);
-
+        
         for (int channel = 0; channel < bufferIn.getNumChannels(); channel++) {
             for (int i = 0; i < base.getNumSamples(); i++) {
                 bufferIn.addSample(channel, i + currentDelayPosition, base.getSample(channel, i));
@@ -64,8 +62,6 @@ void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &base, float dampen, 
         }
 
         applyDelay(base, dampen, delayTimeInSamples, iteration + 1);
-    } else {
-        printf("%d delay processed after %d recursions\n", type, iteration);
     }
 }
 
@@ -88,8 +84,9 @@ ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
     float delayFeedbackNormalized = *parameters.getRawParameterValue(DELAY_FEEDBACK_ID) / 100.0f;
     float delayTimeNormalized = *parameters.getRawParameterValue(DELAY_TIME_ID) / 1000.0f;
     auto delayTimeInSamples = static_cast<int>(sampleRate * delayTimeNormalized);
+    float delayMix = *parameters.getRawParameterValue(DELAY_MIX_ID) / 100.0f;
+    float reverbMix = *parameters.getRawParameterValue(REVERB_MIX_ID) / 100.0f;
     AudioSampleBuffer delayBaseBuffer;
-    clock_t start;
 
     auto effects = static_cast<bool>(*parameters.getRawParameterValue(
             (type == RISE) ? RISE_EFFECTS_ID : FALL_EFFECTS_ID));
@@ -97,27 +94,25 @@ ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
     if (effects) {
         auto timeWarp = static_cast<int>(*parameters.getRawParameterValue((type == RISE) ? RISE_TIME_WARP_ID : FALL_REVERSE_ID));
         if (timeWarp != 0) {
-            start = clock();
             applyTimeWarp(timeWarp);
-            printf("%d time warp elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
         }
         
-        start = clock();
-        applyReverb();
-        printf("%d reverb elapsed: %.2lf s, magnitude %2.f\n", type, float( clock () - start ) /  CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
+        if(reverbMix > 0){
+            impulseResponseSampleBuffer.applyGain(reverbMix);
+            applyReverb();
+        }
         
-        start = clock();
-        delayBaseBuffer.makeCopyOf(bufferIn);
-        applyDelay(delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
-        printf("%d delay elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
+        if(delayMix > 0){
+            delayBaseBuffer.makeCopyOf(bufferIn);
+            delayBaseBuffer.applyGain(delayMix);
+            applyDelay(delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
+        }
     }
 
     bool riseReverse = type == RISE && *parameters.getRawParameterValue(RISE_REVERSE_ID);
     bool fallReverse = type == FALL && *parameters.getRawParameterValue(FALL_REVERSE_ID);
     if (riseReverse || fallReverse) {
-        start = clock();
         bufferIn.reverse(0, bufferIn.getNumSamples());
-        printf("%d reverse elapsed: %.2lf s, magnitude %2.f\n", type, float(clock() - start) / CLOCKS_PER_SEC, bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
     }
 
     return jobHasFinished;

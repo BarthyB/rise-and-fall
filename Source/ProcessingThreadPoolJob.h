@@ -8,7 +8,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../modules/juce_dsp/juce_dsp.h"
 #include "../Lib/SoundTouch/SoundTouch.h"
-#include "../Lib/FFTConvolver/FFTConvolver.h"
+#include "../Lib/FFTConvolver/TwoStageFFTConvolver.h"
 #include "GUIParams.h"
 
 using namespace soundtouch;
@@ -46,7 +46,7 @@ private:
      */
     Convolution convolution;
     
-    OwnedArray<fftconvolver::FFTConvolver> convolvers;
+    OwnedArray<fftconvolver::TwoStageFFTConvolver> convolvers;
 
     /**
      * Warp audio samples to change the speed and pitch
