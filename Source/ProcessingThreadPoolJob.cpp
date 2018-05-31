@@ -3,6 +3,7 @@
 //
 
 #define AVOID_REALLOCATING false
+#define BUFFER_SIZE 512
 
 #include "ProcessingThreadPoolJob.h"
 
@@ -19,13 +20,10 @@ ProcessingThreadPoolJob::ProcessingThreadPoolJob(ThreadType type, AudioSampleBuf
 
     soundTouch.setChannels(1); // always iterate over single channels
     soundTouch.setSampleRate(static_cast<uint>(sampleRate));
-            
-    printf("%d: Impulse Response: %d Channels, %d Samples, magnitude: %.2f\n", type, this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
-    printf("%d: Buffer: %d Channels, %d Samples, magnitude: %.2f\n", type, this->bufferIn.getNumChannels(), this->bufferIn.getNumSamples(), bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
     
     for (int i = 0; i < this->impulseResponseSampleBuffer.getNumChannels(); i++) {
         convolvers.add(new fftconvolver::FFTConvolver());
-        convolvers[i]->init(512, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
+        convolvers[i]->init(BUFFER_SIZE, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
     }
 }
 
@@ -78,12 +76,10 @@ void ProcessingThreadPoolJob::applyReverb() {
     int processedSize = impulseResponseSampleBuffer.getNumSamples() + copy.getNumSamples() - 1;
     bufferIn.setSize(bufferIn.getNumChannels(), processedSize, false, true, AVOID_REALLOCATING);
     
-    printf("magnitude before reverb: %f\n", bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
     for (int i = 0; i < copy.getNumChannels(); i++) {
         int impulseResponseChannelIndex = jmin(i, impulseResponseSampleBuffer.getNumChannels() - 1);
-        convolvers[impulseResponseChannelIndex]->process(copy.getReadPointer(i), bufferIn.getWritePointer(i), processedSize);
+        convolvers[impulseResponseChannelIndex]->process(copy.getReadPointer(i), bufferIn.getWritePointer(i), copy.getNumSamples());
     }
-    printf("magnitude after reverb: %f\n", bufferIn.getMagnitude(0, bufferIn.getNumSamples()));
 }
 
 

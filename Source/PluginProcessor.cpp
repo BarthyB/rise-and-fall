@@ -325,9 +325,8 @@ void RiseandfallAudioProcessor::updateThumbnail() {
 
 void RiseandfallAudioProcessor::normalizeSample(AudioSampleBuffer &buffer) {
     float magnitude = buffer.getMagnitude(0, buffer.getNumSamples());
-    printf("Magnitude: %.2f\n", magnitude);
     buffer.applyGain(1 / magnitude);
-    printf("Magnitude normalized: %.2f\n", buffer.getMagnitude(0, buffer.getNumSamples()));
+    printf("Magnitude: %.2f, Magnitude normalized: %.2f\n", magnitude, buffer.getMagnitude(0, buffer.getNumSamples()));
 }
 
 
@@ -354,9 +353,6 @@ void RiseandfallAudioProcessor::processSample() {
             if (riseJobFinished && fallJobFinished) {
                 riseSampleBuffer.makeCopyOf(risePoolJob.getOutputBuffer());
                 fallSampleBuffer.makeCopyOf(fallPoolJob.getOutputBuffer());
-                
-                printf("Rise: %d Channels, %d Samples\n", riseSampleBuffer.getNumChannels(), riseSampleBuffer.getNumSamples());
-                printf("Fall: %d Channels, %d Samples\n", fallSampleBuffer.getNumChannels(), fallSampleBuffer.getNumSamples());
                 
                 concatenate();
                 normalizeSample(processedSampleBuffer);
@@ -396,6 +392,7 @@ void RiseandfallAudioProcessor::processSample() {
                 printf("BLOCK END: %.2f s, %d Channels, %d Samples\n\n", float((clock() - start)) / CLOCKS_PER_SEC, processedSampleBuffer.getNumChannels(), processedSampleBuffer.getNumSamples());
                 
                 processing = false;
+                updateThumbnail();
             } else {
                 printf("Thread pool timed out after 60 seconds.\n");
             }
@@ -495,7 +492,6 @@ int RiseandfallAudioProcessor::getSampleDuration() {
 
 void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
     printf("IMPULSE RESPONSE CHANGED: %d\n", id);
-
     /*
     const char* resourceName;
     int resourceSize;
@@ -512,17 +508,20 @@ void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
     }
     
     ScopedPointer<MemoryInputStream> input = new MemoryInputStream(resourceName, resourceSize, false);
-    ScopedPointer<AudioFormatReader> reader = formatManager.createReaderFor(input);
+    ScopedPointer<WavAudioFormat> format = new WavAudioFormat();
+    ScopedPointer<AudioFormatReader> reader = format->createReaderFor(input, false);
     
     printf("Impulse Response before: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
     
     impulseResponseSampleBuffer.setSize(numChannels, static_cast<int>(reader->lengthInSamples));
-    reader->read(&impulseResponseSampleBuffer, numChannels, 0, reader->lengthInSamples, true, reader->numChannels > 1);
+    reader->read(&impulseResponseSampleBuffer, numChannels, 0, reader->lengthInSamples, true, true);
+    normalizeSample(impulseResponseSampleBuffer);
     
     printf("Impulse Response after: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
     
     reader->input = nullptr;
-     */
+    */
+    
     File file("/Users/Barthy/Desktop/room_impulse_response_LBS.wav");
     String filePath = file.getFullPathName();
     ScopedPointer<AudioFormatReader> reader = formatManager.createReaderFor(file);
@@ -532,6 +531,7 @@ void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
             impulseResponseSampleBuffer.setSize(reader->numChannels,
                                          static_cast<int>(reader->lengthInSamples));
             reader->read(&impulseResponseSampleBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+            normalizeSample(impulseResponseSampleBuffer);
             this->processSample();
         } else {
             // handle the error that the file is 20 seconds or longer..
