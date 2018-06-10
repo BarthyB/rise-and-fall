@@ -13,6 +13,8 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "PluginProcessor.h"
 #include "CustomLookAndFeel.hpp"
+#include "SimplePositionOverlay.h"
+#include "SimpleThumbnailComponent.hpp"
 
 typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
@@ -23,9 +25,7 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
  */
 class RiseandfallAudioProcessorEditor :
 public AudioProcessorEditor,
-public Button::Listener,
-public ChangeListener,
-private Timer {
+public Button::Listener {
 public:
     RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &, AudioProcessorValueTreeState& vts);
     
@@ -83,6 +83,9 @@ private:
     
     const Rectangle<int> thumbnailBounds;
     
+    SimpleThumbnailComponent thumbnailComp;
+    SimplePositionOverlay positionOverlay;
+    
     void initSlider(Slider *slider, const String &label, const String &suffix, bool logarithmic, bool linear);
     
     void initComboBox(ComboBox *comboBox, const String &label, const StringArray *items);
@@ -91,11 +94,7 @@ private:
     
     void buttonClicked(Button *button) override;
     
-    void changeListenerCallback(ChangeBroadcaster *source) override;
-    
     void loadFileButtonCLicked();
-    
-    void timerCallback() override;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };

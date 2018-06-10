@@ -46,9 +46,10 @@ void RiseandfallAudioProcessorEditor::initToggleButton(ToggleButton *toggleButto
 }
 
 //==============================================================================
-RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &p,
-                                                                 AudioProcessorValueTreeState &vts)
-: AudioProcessorEditor(&p), processor(p), valueTreeState(vts), thumbnailBounds(16, 536, 656, 144) {
+RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &p, AudioProcessorValueTreeState &vts)
+: AudioProcessorEditor(&p), processor(p), valueTreeState(vts), thumbnailBounds(16, 536, 656, 144),
+thumbnailComp(processor.getThumbnail(), processor.getThumbnailCache(), customLookAndFeel),
+positionOverlay(p, customLookAndFeel) {
     
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
@@ -62,7 +63,6 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     riseTimeWarpSliderAttachment = new SliderAttachment(valueTreeState, RISE_TIME_WARP_ID, riseTimeWarpSlider);
     initSlider(&fallTimeWarpSlider, "TIME WARP", customLookAndFeel.DIMENSION_TIMES, false, false);
     fallTimeWarpSliderAttachment = new SliderAttachment(valueTreeState, FALL_TIME_WARP_ID, fallTimeWarpSlider);
-    
     initSlider(&reverbMixSlider, "MIX / WET", customLookAndFeel.DIMENSION_PERCENT, false, false);
     reverbMixSliderAttachment = new SliderAttachment(valueTreeState, REVERB_MIX_ID, reverbMixSlider);
     initSlider(&delayMixSlider, "MIX / WET", customLookAndFeel.DIMENSION_PERCENT, false, false);
@@ -119,10 +119,12 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     loadFileButton.setColour(TextButton::textColourOffId, customLookAndFeel.COLOUR_BLACK);
     loadFileButton.setColour(TextButton::textColourOnId, customLookAndFeel.COLOUR_BLACK);
     addAndMakeVisible(&loadFileButton);
-    processor.getThumbnail()->addChangeListener(this);
+    
+    processor.getThumbnail().addChangeListener(&thumbnailComp);
     formatManager.registerBasicFormats();
     
-    startTimer (40);
+    addAndMakeVisible (&thumbnailComp);
+    addAndMakeVisible (&positionOverlay);
 }
 
 RiseandfallAudioProcessorEditor::~RiseandfallAudioProcessorEditor() {
@@ -133,26 +135,6 @@ RiseandfallAudioProcessorEditor::~RiseandfallAudioProcessorEditor() {
 void RiseandfallAudioProcessorEditor::paint(Graphics &g) {
     Image background = ImageCache::getFromMemory(BinaryData::background_png, BinaryData::background_pngSize);
     g.drawImageAt(background, 0, 0);
-    
-    g.setColour(customLookAndFeel.COLOUR_WHITE);
-    g.setFont(fontSize);
-    
-    if (processor.getOriginalSampleBuffer()->getNumChannels() != 0) {
-        g.setColour(customLookAndFeel.COLOUR_RED);
-        processor.getThumbnail()->drawChannels(g, thumbnailBounds, 0.0, processor.getThumbnail()->getTotalLength(), 1.0f);
-        
-        g.setColour(customLookAndFeel.COLOUR_BLACK);
-        
-        int position = processor.getPosition();
-        int numSamples = processor.getNumSamples();
-        float percentage = (float) position / numSamples;
-        int drawPosition = (percentage * 656) + 16;
-        g.drawLine(drawPosition, thumbnailBounds.getY() - 16, drawPosition, thumbnailBounds.getBottom() + 16, 1.0f);
-    } else {
-        g.setColour(customLookAndFeel.COLOUR_BLACK);
-        g.setFont(fontSize);
-        g.drawFittedText("NO SAMPLE", thumbnailBounds, Justification::centred, 1);
-    }
 }
 
 void RiseandfallAudioProcessorEditor::resized() {
@@ -183,6 +165,9 @@ void RiseandfallAudioProcessorEditor::resized() {
     fallDelayToggleButton.setBounds(368, 384, toggleButtonWidth, toggleButtonHeight);
     
     loadFileButton.setBounds(32, 464, 188, 32);
+    
+    thumbnailComp.setBounds(thumbnailBounds);
+    positionOverlay.setBounds(thumbnailBounds.expanded(16, 16));
 }
 
 void RiseandfallAudioProcessorEditor::loadFileButtonCLicked() {
@@ -199,12 +184,3 @@ void RiseandfallAudioProcessorEditor::buttonClicked(Button *button) {
     }
 }
 
-void RiseandfallAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster *source) {
-    if (source == processor.getThumbnail()) {
-        repaint();
-    }
-}
-
-void RiseandfallAudioProcessorEditor::timerCallback() {
-    repaint();
-}

@@ -76,14 +76,16 @@ public:
      *
      * @return A pointer to the original audio buffer
      */
-    AudioSampleBuffer *getOriginalSampleBuffer();
+    AudioSampleBuffer& getOriginalSampleBuffer();
 
     /**
      * Get the thumbnail
      *
-     * @return A pointer to the thumbnail
+     * @return A reference to the thumbnail
      */
-    AudioThumbnail *getThumbnail();
+    AudioThumbnail& getThumbnail();
+    
+    AudioThumbnailCache& getThumbnailCache();
 
     int getPosition();
     
@@ -148,16 +150,6 @@ private:
      * Number of samples in the current block
      */
     int samplesPerBlock;
-
-    /**
-     * Number of channels in the original audio file
-     */
-    int numChannels;
-
-    /**
-     * Number of samples in the original audio file
-     */
-    int numSamples;
 
     /**
      * Current position in the processing of sample blocks
