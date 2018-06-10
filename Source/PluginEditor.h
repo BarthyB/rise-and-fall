@@ -22,26 +22,26 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 /**
  */
 class RiseandfallAudioProcessorEditor :
-        public AudioProcessorEditor,
-        public Button::Listener,
-        public ChangeListener,
-        private Timer {
+public AudioProcessorEditor,
+public Button::Listener,
+public ChangeListener,
+private Timer {
 public:
     RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &, AudioProcessorValueTreeState& vts);
-
+    
     ~RiseandfallAudioProcessorEditor() override;
-
+    
     //==============================================================================
     void paint(Graphics &) override;
-
+    
     void resized() override;
-
+    
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     RiseandfallAudioProcessor &processor;
     AudioProcessorValueTreeState& valueTreeState;
-
+    
     CustomLookAndFeel customLookAndFeel;
     Slider timeOffsetSlider;
     ScopedPointer<SliderAttachment> timeOffsetSliderAttachment;
@@ -67,31 +67,35 @@ private:
     ScopedPointer<ComboBoxAttachment> filterTypeComboBoxAttachment;
     ToggleButton riseReverseToggleButton;
     ScopedPointer<ButtonAttachment> riseReverseToggleButtonAttachment;
-    ToggleButton riseEffectsToggleButton;
-    ScopedPointer<ButtonAttachment> riseEffectsToggleButtonAttachment;
+    ToggleButton riseReverbToggleButton;
+    ScopedPointer<ButtonAttachment> riseReverbToggleButtonAttachment;
+    ToggleButton riseDelayToggleButton;
+    ScopedPointer<ButtonAttachment> riseDelayToggleButtonAttachment;
     ToggleButton fallReverseToggleButton;
     ScopedPointer<ButtonAttachment> fallReverseToggleButtonAttachment;
-    ToggleButton fallEffectsToggleButton;
-    ScopedPointer<ButtonAttachment> fallEffectsToggleButtonAttachment;
+    ToggleButton fallReverbToggleButton;
+    ScopedPointer<ButtonAttachment> fallReverbToggleButtonAttachment;
+    ToggleButton fallDelayToggleButton;
+    ScopedPointer<ButtonAttachment> fallDelayToggleButtonAttachment;
     TextButton loadFileButton;
-
+    
     AudioFormatManager formatManager;
-
+    
     const Rectangle<int> thumbnailBounds;
-
+    
     void initSlider(Slider *slider, const String &label, const String &suffix, bool logarithmic, bool linear);
-
+    
     void initComboBox(ComboBox *comboBox, const String &label, const StringArray *items);
-
+    
     void initToggleButton(ToggleButton *toggleButton, String label);
-
+    
     void buttonClicked(Button *button) override;
-
+    
     void changeListenerCallback(ChangeBroadcaster *source) override;
-
+    
     void loadFileButtonCLicked();
-            
+    
     void timerCallback() override;
-            
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };

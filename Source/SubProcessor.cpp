@@ -8,13 +8,13 @@
 #include "SubProcessor.h"
 
 SubProcessor::SubProcessor(ThreadType type, AudioSampleBuffer &bufferIn,
-                                                 AudioProcessorValueTreeState &vts,
-                                                 double sampleRate,
-                                                 AudioSampleBuffer &impulseResponseSampleBuffer) : bufferIn(bufferIn), parameters(vts) {
+                           AudioProcessorValueTreeState &vts,
+                           double sampleRate,
+                           AudioSampleBuffer &impulseResponseSampleBuffer) : bufferIn(bufferIn), parameters(vts) {
     this->type = type;
     this->sampleRate = sampleRate;
     this->impulseResponseSampleBuffer = impulseResponseSampleBuffer;
-
+    
     soundTouch.setChannels(1); // always iterate over single channels
     soundTouch.setSampleRate(static_cast<uint>(sampleRate));
 }
@@ -24,15 +24,15 @@ void SubProcessor::applyTimeWarp(int factor) {
     if (realFactor < 0) {
         realFactor = 1 / abs(realFactor);
     }
-
+    
     AudioSampleBuffer copy;
     copy.makeCopyOf(bufferIn);
-
+    
     soundTouch.setTempo(realFactor);
-
+    
     double ratio = soundTouch.getInputOutputSampleRatio();
     bufferIn.setSize(bufferIn.getNumChannels(), static_cast<int>(ceil(bufferIn.getNumSamples() * ratio)), false, true, AVOID_REALLOCATING);
-
+    
     for (int channel = 0; channel < bufferIn.getNumChannels(); channel++) {
         soundTouch.putSamples(copy.getReadPointer(channel), static_cast<uint>(copy.getNumSamples()));
         soundTouch.receiveSamples(bufferIn.getWritePointer(channel), static_cast<uint>(bufferIn.getNumSamples()));
@@ -42,7 +42,7 @@ void SubProcessor::applyTimeWarp(int factor) {
 
 void SubProcessor::applyDelay(AudioSampleBuffer &base, float dampen, int delayTimeInSamples, int iteration) {
     base.applyGain(dampen);
-    if (base.getMagnitude(0, base.getNumSamples()) > 0.005) {
+    if (base.getMagnitude(0, base.getNumSamples()) > 0.001f) {
         int currentDelayPosition = delayTimeInSamples * iteration;
         int length = bufferIn.getNumSamples() + base.getNumSamples() + delayTimeInSamples;
         bufferIn.setSize(bufferIn.getNumChannels(), length, true, true, AVOID_REALLOCATING);
@@ -52,7 +52,7 @@ void SubProcessor::applyDelay(AudioSampleBuffer &base, float dampen, int delayTi
                 bufferIn.addSample(channel, i + currentDelayPosition, base.getSample(channel, i));
             }
         }
-
+        
         applyDelay(base, dampen, delayTimeInSamples, iteration + 1);
     }
 }
@@ -85,28 +85,26 @@ void SubProcessor::process() {
     float delayMix = *parameters.getRawParameterValue(DELAY_MIX_ID) / 100.0f;
     float reverbMix = *parameters.getRawParameterValue(REVERB_MIX_ID) / 100.0f;
     AudioSampleBuffer delayBaseBuffer;
-
-    auto effects = static_cast<bool>(*parameters.getRawParameterValue(
-            (type == RISE) ? RISE_EFFECTS_ID : FALL_EFFECTS_ID));
-
-    if (effects) {
-        auto timeWarp = static_cast<int>(*parameters.getRawParameterValue((type == RISE) ? RISE_TIME_WARP_ID : FALL_REVERSE_ID));
-        if (timeWarp != 0) {
-            applyTimeWarp(timeWarp);
-        }
-        
-        if(reverbMix > 0){
-            impulseResponseSampleBuffer.applyGain(reverbMix);
-            applyReverb();
-        }
-        
-        if(delayMix > 0){
-            delayBaseBuffer.makeCopyOf(bufferIn);
-            delayBaseBuffer.applyGain(delayMix);
-            applyDelay(delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
-        }
+    
+    auto reverbEnabled = static_cast<bool>(*parameters.getRawParameterValue((type == RISE) ? RISE_REVERB_ID : FALL_REVERB_ID));
+    auto delayEnabled = static_cast<bool>(*parameters.getRawParameterValue((type == RISE) ? RISE_DELAY_ID : FALL_DELAY_ID));
+    
+    auto timeWarp = static_cast<int>(*parameters.getRawParameterValue((type == RISE) ? RISE_TIME_WARP_ID : FALL_REVERSE_ID));
+    if (timeWarp != 0) {
+        applyTimeWarp(timeWarp);
     }
-
+    
+    if(reverbEnabled && reverbMix > 0){
+        impulseResponseSampleBuffer.applyGain(reverbMix);
+        applyReverb();
+    }
+    
+    if(delayEnabled && delayMix > 0){
+        delayBaseBuffer.makeCopyOf(bufferIn);
+        delayBaseBuffer.applyGain(delayMix);
+        applyDelay(delayBaseBuffer, delayFeedbackNormalized, delayTimeInSamples, 1);
+    }
+    
     bool riseReverse = type == RISE && *parameters.getRawParameterValue(RISE_REVERSE_ID);
     bool fallReverse = type == FALL && *parameters.getRawParameterValue(FALL_REVERSE_ID);
     if (riseReverse || fallReverse) {

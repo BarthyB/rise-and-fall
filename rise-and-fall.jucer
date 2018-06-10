@@ -78,10 +78,9 @@
       </GROUP>
     </GROUP>
     <GROUP id="{E54CE0C6-4AE7-C673-6E88-4FC41715E328}" name="Source">
-      <FILE id="pgkA5M" name="ProcessingThreadPoolJob.cpp" compile="1" resource="0"
-            file="Source/ProcessingThreadPoolJob.cpp"/>
-      <FILE id="eJ5UUQ" name="ProcessingThreadPoolJob.h" compile="0" resource="0"
-            file="Source/ProcessingThreadPoolJob.h"/>
+      <FILE id="PmJQa4" name="SubProcessor.cpp" compile="1" resource="0"
+            file="Source/SubProcessor.cpp"/>
+      <FILE id="TGvgUY" name="SubProcessor.h" compile="0" resource="0" file="Source/SubProcessor.h"/>
       <FILE id="dXsAnA" name="GUIParams.h" compile="0" resource="0" file="Source/GUIParams.h"/>
       <FILE id="bz6KWZ" name="CustomLookAndFeel.hpp" compile="0" resource="0"
             file="Source/CustomLookAndFeel.hpp"/>
@@ -94,10 +93,19 @@
       <FILE id="laLMM1" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
     </GROUP>
     <GROUP id="{6A3CA5D5-E5D2-5947-8F83-09DC8FC3127D}" name="Resources">
-      <FILE id="COTH0o" name="background.png" compile="1" resource="1" file="Resources/background.png"/>
-      <FILE id="bCfWN3" name="minster.wav" compile="1" resource="1" file="Resources/minster.wav"/>
-      <FILE id="Hf4jCF" name="room_impulse_response_LBS.wav" compile="1"
-            resource="1" file="Resources/room_impulse_response_LBS.wav"/>
+      <FILE id="gni1Oi" name="background.png" compile="0" resource="1" file="Resources/background.png"/>
+      <FILE id="N9k4Hv" name="empty_apartment_bedroom-48khz-norm-trim.wav"
+            compile="0" resource="1" file="Resources/empty_apartment_bedroom-48khz-norm-trim.wav"/>
+      <FILE id="wndgnT" name="nuclear _reactor_hall-48khz-norm-trim.wav"
+            compile="0" resource="1" file="Resources/nuclear _reactor_hall-48khz-norm-trim.wav"/>
+      <FILE id="G6YCca" name="st_georges-48khz-norm-trim.wav" compile="0"
+            resource="1" file="Resources/st_georges-48khz-norm-trim.wav"/>
+      <FILE id="cnMxgZ" name="university_of_york_stairwell-48khz-norm-trim.wav"
+            compile="0" resource="1" file="Resources/university_of_york_stairwell-48khz-norm-trim.wav"/>
+      <FILE id="wfuYeL" name="warehouse-48khz-norm-trim.wav" compile="0"
+            resource="1" file="Resources/warehouse-48khz-norm-trim.wav"/>
+      <FILE id="kiMkKc" name="york_minster-48khz-norm-trim.wav" compile="0"
+            resource="1" file="Resources/york_minster-48khz-norm-trim.wav"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>

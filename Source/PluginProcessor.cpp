@@ -40,38 +40,23 @@ RiseandfallAudioProcessor::RiseandfallAudioProcessor()
     
     formatManager.registerBasicFormats();
     
-    parameters.createAndAddParameter(TIME_OFFSET_ID, TIME_OFFSET_NAME, String(), NormalisableRange<float>(-120, 120, 1),
-                                     0, nullptr, nullptr);
-    parameters.createAndAddParameter(RISE_REVERSE_ID, RISE_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1),
-                                     true, nullptr, nullptr);
-    parameters.createAndAddParameter(FALL_REVERSE_ID, FALL_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1),
-                                     false, nullptr, nullptr);
-    parameters.createAndAddParameter(RISE_EFFECTS_ID, RISE_EFFECTS_NAME, String(), NormalisableRange<float>(0, 1, 1),
-                                     true, nullptr, nullptr);
-    parameters.createAndAddParameter(FALL_EFFECTS_ID, FALL_EFFECTS_NAME, String(), NormalisableRange<float>(0, 1, 1),
-                                     true, nullptr, nullptr);
-    parameters.createAndAddParameter(RISE_TIME_WARP_ID, RISE_TIME_WARP_NAME, String(),
-                                     NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
-    parameters.createAndAddParameter(FALL_TIME_WARP_ID, FALL_TIME_WARP_NAME, String(),
-                                     NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
-    parameters.createAndAddParameter(DELAY_TIME_ID, DELAY_TIME_NAME, String(), NormalisableRange<float>(10, 1000, 1),
-                                     500, nullptr, nullptr);
-    parameters.createAndAddParameter(DELAY_FEEDBACK_ID, DELAY_FEEDBACK_NAME, String(),
-                                     NormalisableRange<float>(0, 99, 1), 50, nullptr, nullptr);
-    parameters.createAndAddParameter(IMPULSE_RESPONSE_ID, IMPULSE_RESPONSE_NAME, String(),
-                                     NormalisableRange<float>(0, 2, 1), 0, nullptr, nullptr);
-    parameters.createAndAddParameter(FILTER_TYPE_ID, FILTER_TYPE_NAME, String(), NormalisableRange<float>(0, 2, 1),
-                                     0, nullptr, nullptr);
-    parameters.createAndAddParameter(FILTER_CUTOFF_ID, FILTER_CUTOFF_NAME, String(),
-                                     NormalisableRange<float>(20, 20000, 1),
-                                     20000, nullptr, nullptr);
-    parameters.createAndAddParameter(FILTER_RESONANCE_ID, FILTER_RESONANCE_NAME, String(),
-                                     NormalisableRange<float>(0.1, 10, 0.1),
-                                     1.0, nullptr, nullptr);
-    parameters.createAndAddParameter(REVERB_MIX_ID, REVERB_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1),
-                                     50, nullptr, nullptr);
-    parameters.createAndAddParameter(DELAY_MIX_ID, DELAY_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1),
-                                     50, nullptr, nullptr);
+    parameters.createAndAddParameter(TIME_OFFSET_ID, TIME_OFFSET_NAME, String(), NormalisableRange<float>(-1000, 1000, 1), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_REVERSE_ID, RISE_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1), true, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_REVERSE_ID, FALL_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1), false, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_REVERB_ID, RISE_REVERB_NAME, String(), NormalisableRange<float>(0, 1, 1), true, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_REVERB_ID, FALL_REVERB_NAME, String(), NormalisableRange<float>(0, 1, 1), true, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_DELAY_ID, RISE_DELAY_NAME, String(), NormalisableRange<float>(0, 1, 1), true, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_DELAY_ID, FALL_DELAY_NAME, String(), NormalisableRange<float>(0, 1, 1), true, nullptr, nullptr);
+    parameters.createAndAddParameter(RISE_TIME_WARP_ID, RISE_TIME_WARP_NAME, String(), NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(FALL_TIME_WARP_ID, FALL_TIME_WARP_NAME, String(), NormalisableRange<float>(-4, 4, 2), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_TIME_ID, DELAY_TIME_NAME, String(), NormalisableRange<float>(10, 1000, 1), 500, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_FEEDBACK_ID, DELAY_FEEDBACK_NAME, String(), NormalisableRange<float>(0, 99, 1), 50, nullptr, nullptr);
+    parameters.createAndAddParameter(IMPULSE_RESPONSE_ID, IMPULSE_RESPONSE_NAME, String(), NormalisableRange<float>(0, 5, 1), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_TYPE_ID, FILTER_TYPE_NAME, String(), NormalisableRange<float>(0, 2, 1), 0, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_CUTOFF_ID, FILTER_CUTOFF_NAME, String(), NormalisableRange<float>(20, 20000, 1), 20000, nullptr, nullptr);
+    parameters.createAndAddParameter(FILTER_RESONANCE_ID, FILTER_RESONANCE_NAME, String(), NormalisableRange<float>(0.1, 10, 0.1), 1.0, nullptr, nullptr);
+    parameters.createAndAddParameter(REVERB_MIX_ID, REVERB_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1), 50, nullptr, nullptr);
+    parameters.createAndAddParameter(DELAY_MIX_ID, DELAY_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1), 50, nullptr, nullptr);
     
     parameters.state = ValueTree(Identifier("RiseAndFall"));
     
@@ -374,8 +359,15 @@ void RiseandfallAudioProcessor::processSample() {
             trim(riseSampleBuffer);
             trim(fallSampleBuffer);
             
+            normalizeSample(riseSampleBuffer);
+            normalizeSample(fallSampleBuffer);
+    
             concatenate();
+            
             normalizeSample(processedSampleBuffer);
+            
+            processedSampleBuffer.applyGainRamp(0, sampleRate, 0, 1);
+            processedSampleBuffer.applyGainRamp(numSamples - sampleRate, sampleRate, 1, 0);
             
             position = 0;
             numSamples = processedSampleBuffer.getNumSamples();
@@ -487,54 +479,44 @@ int RiseandfallAudioProcessor::getSampleDuration() {
 
 void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
     printf("IMPULSE RESPONSE CHANGED: %d\n", id);
-    /*
-     const char* resourceName;
-     int resourceSize;
-     
-     switch(id){
-     case 0:
-     resourceName = BinaryData::room_impulse_response_LBS_wav;
-     resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
-     break;
-     default:
-     printf("default impulse response\n");
-     resourceName = BinaryData::room_impulse_response_LBS_wav;
-     resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
-     }
-     
-     ScopedPointer<MemoryInputStream> input = new MemoryInputStream(resourceName, resourceSize, false);
-     ScopedPointer<WavAudioFormat> format = new WavAudioFormat();
-     ScopedPointer<AudioFormatReader> reader = format->createReaderFor(input, false);
-     
-     printf("Impulse Response before: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
-     
-     impulseResponseSampleBuffer.setSize(numChannels, static_cast<int>(reader->lengthInSamples));
-     reader->read(&impulseResponseSampleBuffer, numChannels, 0, reader->lengthInSamples, true, true);
-     normalizeSample(impulseResponseSampleBuffer);
-     
-     printf("Impulse Response after: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
-     
-     reader->input = nullptr;
-     */
+    const char* resourceName;
+    int resourceSize;
     
-    File file("/Users/Barthy/Desktop/room_impulse_response_LBS.wav");
-    String filePath = file.getFullPathName();
-    ScopedPointer<AudioFormatReader> reader = formatManager.createReaderFor(file);
-    if(reader != nullptr){
-        const double duration = reader->lengthInSamples / reader->sampleRate;
-        if (duration < 20) {
-            impulseResponseSampleBuffer.setSize(reader->numChannels,
-                                                static_cast<int>(reader->lengthInSamples));
-            reader->read(&impulseResponseSampleBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
-            normalizeSample(impulseResponseSampleBuffer);
-            this->processSample();
-        } else {
-            // handle the error that the file is 20 seconds or longer..
-        }
-    } else {
-        // TODO JUCE DIALOG
-        printf("FILE DOES NOT EXIST ANYMORE\n");
+    switch(id){
+        case 5:
+            resourceName = BinaryData::university_of_york_stairwell48khznormtrim_wav;
+            resourceSize = BinaryData::university_of_york_stairwell48khznormtrim_wavSize;
+            break;
+        case 4:
+            resourceName = BinaryData::empty_apartment_bedroom48khznormtrim_wav;
+            resourceSize = BinaryData::empty_apartment_bedroom48khznormtrim_wavSize;
+            break;
+        case 3:
+            resourceName = BinaryData::st_georges48khznormtrim_wav;
+            resourceSize = BinaryData::st_georges48khznormtrim_wavSize;
+            break;
+        case 2:
+            resourceName = BinaryData::nuclear__reactor_hall48khznormtrim_wav;
+            resourceSize = BinaryData::nuclear__reactor_hall48khznormtrim_wavSize;
+            break;
+        case 1:
+            resourceName = BinaryData::york_minster48khznormtrim_wav;
+            resourceSize = BinaryData::york_minster48khznormtrim_wavSize;
+            break;
+        case 0:
+        default:
+            resourceName = BinaryData::warehouse48khznormtrim_wav;
+            resourceSize = BinaryData::warehouse48khznormtrim_wavSize;
     }
+    
+    ScopedPointer<MemoryInputStream> input(new MemoryInputStream(resourceName, resourceSize, false));
+    ScopedPointer<AudioFormatReader> reader(formatManager.createReaderFor(input));
+    
+    impulseResponseSampleBuffer.setSize(reader->numChannels, static_cast<int>(reader->lengthInSamples));
+    reader->read(&impulseResponseSampleBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+    normalizeSample(impulseResponseSampleBuffer);
+    
+    reader->input = nullptr;
     
     this->processSample();
 }
