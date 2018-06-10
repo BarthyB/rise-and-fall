@@ -1,45 +1,45 @@
 /*
-  ==============================================================================
-
-    This file was auto-generated!
-
-    It contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
+ ==============================================================================
+ 
+ This file was auto-generated!
+ 
+ It contains the basic framework code for a JUCE plugin processor.
+ 
+ ==============================================================================
+ */
 
 #define AVOID_REALLOCATING false
-#define PLAYLOOP true
+#define PLAYLOOP false
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "ProcessingThreadPoolJob.h"
+#include "SubProcessor.h"
 
 //==============================================================================
 RiseandfallAudioProcessor::RiseandfallAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-        : AudioProcessor(BusesProperties()
+: AudioProcessor(BusesProperties()
 #if !JucePlugin_IsMidiEffect
 #if !JucePlugin_IsSynth
-                                 .withInput("Input", AudioChannelSet::stereo(), true)
+                 .withInput("Input", AudioChannelSet::stereo(), true)
 #endif
-                                 .withOutput("Output", AudioChannelSet::stereo(), true)
+                 .withOutput("Output", AudioChannelSet::stereo(), true)
 #endif
-), thumbnailCache(5), thumbnail(256, formatManager, thumbnailCache), parameters(*this, nullptr)
+                 ), thumbnailCache(5), thumbnail(256, formatManager, thumbnailCache), parameters(*this, nullptr)
 #endif
 {
     position = 0;
     numChannels = 0;
     numSamples = 0;
     samplesPerBlock = 0;
-    processing = true;
+    processing = false;
     play = false;
     sampleRate = -1;
     
     impulseResponseSampleBuffer.setSize(0, 0);
-
+    
     formatManager.registerBasicFormats();
-
+    
     parameters.createAndAddParameter(TIME_OFFSET_ID, TIME_OFFSET_NAME, String(), NormalisableRange<float>(-120, 120, 1),
                                      0, nullptr, nullptr);
     parameters.createAndAddParameter(RISE_REVERSE_ID, RISE_REVERSE_NAME, String(), NormalisableRange<float>(0, 1, 1),
@@ -72,15 +72,13 @@ RiseandfallAudioProcessor::RiseandfallAudioProcessor()
                                      50, nullptr, nullptr);
     parameters.createAndAddParameter(DELAY_MIX_ID, DELAY_MIX_NAME, String(), NormalisableRange<float>(0, 100, 1),
                                      50, nullptr, nullptr);
-
+    
     parameters.state = ValueTree(Identifier("RiseAndFall"));
-
+    
     this->addListener(this);
 }
 
-RiseandfallAudioProcessor::~RiseandfallAudioProcessor() {
-    pool.removeAllJobs(true, 2000);
-}
+RiseandfallAudioProcessor::~RiseandfallAudioProcessor() = default;
 
 //==============================================================================
 const String RiseandfallAudioProcessor::getName() const {
@@ -163,13 +161,13 @@ bool RiseandfallAudioProcessor::isBusesLayoutSupported(const BusesLayout &layout
     if (layouts.getMainOutputChannelSet() != AudioChannelSet::mono()
         && layouts.getMainOutputChannelSet() != AudioChannelSet::stereo())
         return false;
-
+    
     // This checks if the input layout matches the output layout
 #if !JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
 #endif
-
+    
     return true;
 #endif
 }
@@ -178,7 +176,7 @@ bool RiseandfallAudioProcessor::isBusesLayoutSupported(const BusesLayout &layout
 
 void RiseandfallAudioProcessor::processBlock(AudioSampleBuffer &buffer, MidiBuffer &midiMessages) {
     ScopedNoDenormals noDenormals;
-
+    
     if (!midiMessages.isEmpty()) {
         MidiMessage message;
         int samplePosition;
@@ -186,29 +184,28 @@ void RiseandfallAudioProcessor::processBlock(AudioSampleBuffer &buffer, MidiBuff
         if (message.isNoteOn(false)) {
             position = 0;
             play = true;
-            printf("Note on!\n");
         }
-        if (message.isNoteOff(false)) {
-            printf("Note off!\n");
+        if (message.isNoteOff(true)) {
             play = false;
+            position = 0;
         }
     }
-
+    
     if (PLAYLOOP || play) {
         buffer.clear();
         midiMessages.clear();
-
+        
         if (numChannels > 0 && !processing) {
-            auto bufferSamplesRemaining = numSamples - (int) position.getValue();
+            auto bufferSamplesRemaining = numSamples - position;
             int samplesThisTime = jmin(samplesPerBlock, bufferSamplesRemaining);
-
+            
             for (int channel = 0; channel < numChannels; channel++) {
-                buffer.addFrom(channel, 0, processedSampleBuffer, channel, (int) position.getValue(), samplesThisTime, 0.9);
+                buffer.addFrom(channel, 0, processedSampleBuffer, channel, position, samplesThisTime, 0.9);
                 filters[channel]->processSamples(buffer.getWritePointer(channel), samplesThisTime);
             }
-
-            position.setValue((int) position.getValue() + samplesThisTime);
-            if ((int) position.getValue() >= numSamples) {
+            
+            position += samplesThisTime;
+            if (position >= numSamples) {
                 if (!PLAYLOOP) {
                     play = false;
                 }
@@ -236,12 +233,12 @@ void RiseandfallAudioProcessor::getStateInformation(MemoryBlock &destData) {
     ScopedPointer<XmlElement> xml = parameters.state.createXml();
     ScopedPointer<XmlElement> filePathXML = new XmlElement(Identifier(FILE_PATH_ID));
     filePathXML->setAttribute("path", filePath);
-
+    
     parent->addChildElement(xml);
     parent->addChildElement(filePathXML);
-
+    
     copyXmlToBinary(*parent, destData);
-
+    
     parent->removeChildElement(xml, false);
     parent->removeChildElement(filePathXML, false);
 }
@@ -262,7 +259,7 @@ void RiseandfallAudioProcessor::setStateInformation(const void *data, int sizeIn
             parameters.state = ValueTree::fromXml(*xml);
             loadNewImpulseResponse(static_cast<int>(*parameters.getRawParameterValue(IMPULSE_RESPONSE_ID)));
         }
-
+        
         xmlState->removeChildElement(xml, false);
         xmlState->removeChildElement(filePathXML, false);
     }
@@ -288,24 +285,24 @@ void RiseandfallAudioProcessor::concatenate() {
     // TIME OFFSET
     auto offsetNumSamples = static_cast<int>((*parameters.getRawParameterValue(TIME_OFFSET_ID) / 1000) * sampleRate);
     numSamples = riseSampleBuffer.getNumSamples() + fallSampleBuffer.getNumSamples() + offsetNumSamples;
-
+    
     processedSampleBuffer.setSize(numChannels, numSamples, false, true, AVOID_REALLOCATING);
-
+    
     int overlapStart = riseSampleBuffer.getNumSamples() + offsetNumSamples;
     int overlapStop = overlapStart + abs(jmin(offsetNumSamples, 0));
     int overlapLength = overlapStop - overlapStart;
-
+    
     for (int i = 0; i < numChannels; i++) {
         for (int j = 0; j < overlapStart && j < riseSampleBuffer.getNumSamples(); j++) {
             float value = riseSampleBuffer.getSample(i, j);
             processedSampleBuffer.setSample(i, j, value);
         }
-
+        
         for (int j = 0; j < overlapLength; j++) {
             float value = fallSampleBuffer.getSample(i, j) + riseSampleBuffer.getSample(i, overlapStart + j);
             processedSampleBuffer.setSample(i, overlapStart + j, value);
         }
-
+        
         for (int j = 0; j < fallSampleBuffer.getNumSamples() - overlapLength; j++) {
             float value = fallSampleBuffer.getSample(i, overlapLength + j);
             processedSampleBuffer.setSample(i, overlapStop + j, value);
@@ -324,36 +321,39 @@ void RiseandfallAudioProcessor::normalizeSample(AudioSampleBuffer &buffer) {
     buffer.applyGain(1 / magnitude);
 }
 
-void RiseandfallAudioProcessor::trim(){
+void RiseandfallAudioProcessor::trim(AudioSampleBuffer &buffer){
     int i = 0;
     bool silent;
+    int bufferNumSamples = buffer.getNumSamples();
+    int bufferNumChannels = buffer.getNumChannels();
+    
     do {
         silent = false;
-        for (int channel = 0; channel < numChannels; channel++) {
-            silent |= processedSampleBuffer.getSample(channel, i) <= 0.0001;
+        for (int channel = 0; channel < bufferNumChannels; channel++) {
+            silent |= buffer.getSample(channel, i) <= 0.0001;
         }
         i++;
-    } while (silent && i < numSamples);
+    } while (silent && i < bufferNumSamples);
     
-    numSamples -= i;
+    bufferNumSamples -= i;
     
     AudioSampleBuffer copy;
-    copy.setDataToReferTo(processedSampleBuffer.getArrayOfWritePointers(), numChannels, i, numSamples);
-    processedSampleBuffer.makeCopyOf(copy);
+    copy.setDataToReferTo(buffer.getArrayOfWritePointers(), bufferNumChannels, i, bufferNumSamples);
+    buffer.makeCopyOf(copy);
     
-    i = numSamples - 1;
+    i = bufferNumSamples - 1;
     
     do {
         silent = false;
-        for (int channel = 0; channel < numChannels; channel++) {
-            silent |= processedSampleBuffer.getSample(channel, i) <= 0.0001;
+        for (int channel = 0; channel < bufferNumChannels; channel++) {
+            silent |= buffer.getSample(channel, i) <= 0.0001;
         }
         i--;
     } while (silent && i >= 0);
-    numSamples = i;
+    bufferNumSamples = i;
     
-    copy.setDataToReferTo(processedSampleBuffer.getArrayOfWritePointers(), numChannels, 0, numSamples);
-    processedSampleBuffer.makeCopyOf(copy);
+    copy.setDataToReferTo(buffer.getArrayOfWritePointers(), bufferNumChannels, 0, bufferNumSamples);
+    buffer.makeCopyOf(copy);
 }
 
 void RiseandfallAudioProcessor::processSample() {
@@ -361,45 +361,29 @@ void RiseandfallAudioProcessor::processSample() {
         if (!processing) {
             processing = true;
             const clock_t start = clock();
-
+            
             riseSampleBuffer.makeCopyOf(originalSampleBuffer);
             fallSampleBuffer.makeCopyOf(originalSampleBuffer);
             
-            ProcessingThreadPoolJob risePoolJob(RISE, riseSampleBuffer, parameters, sampleRate, impulseResponseSampleBuffer);
-            ProcessingThreadPoolJob fallPoolJob(FALL, fallSampleBuffer, parameters, sampleRate, impulseResponseSampleBuffer);
-
-            pool.addJob(&risePoolJob, false);
-            pool.addJob(&fallPoolJob, false);
+            SubProcessor riseProcessor(RISE, riseSampleBuffer, parameters, sampleRate, impulseResponseSampleBuffer);
+            SubProcessor fallProcessor(FALL, fallSampleBuffer, parameters, sampleRate, impulseResponseSampleBuffer);
             
-            bool riseJobFinished = pool.waitForJobToFinish(&risePoolJob, 60000);
-            bool fallJobFinished = pool.waitForJobToFinish(&fallPoolJob, 60000);
-
-            if (riseJobFinished && fallJobFinished) {
-                riseSampleBuffer.makeCopyOf(risePoolJob.getOutputBuffer());
-                fallSampleBuffer.makeCopyOf(fallPoolJob.getOutputBuffer());
-                
-                concatenate();
-                normalizeSample(processedSampleBuffer);
-
-                trim();
-                position = 0;
-                numSamples = processedSampleBuffer.getNumSamples();
-
-                printf("Processed: %.2f s, %d Channels, %d Samples\n\n", float((clock() - start)) / CLOCKS_PER_SEC, processedSampleBuffer.getNumChannels(), processedSampleBuffer.getNumSamples());
-                
-                processing = false;
-                updateThumbnail();
-            } else {
-                printf("Thread pool timed out after 60 seconds.\n");
-            }
-        } else {
-            printf("Interrupting all jobs.\n");
-            while (!pool.removeAllJobs(true, 2000)) {
-                // wait until all jobs are removed
-                printf("Still trying to interrupting all jobs.\n");
-            }
+            riseProcessor.process();
+            fallProcessor.process();
+            
+            trim(riseSampleBuffer);
+            trim(fallSampleBuffer);
+            
+            concatenate();
+            normalizeSample(processedSampleBuffer);
+            
+            position = 0;
+            numSamples = processedSampleBuffer.getNumSamples();
+            
+            printf("Processed: %.2f s, %d Channels, %d Samples\n\n", float((clock() - start)) / CLOCKS_PER_SEC, processedSampleBuffer.getNumChannels(), processedSampleBuffer.getNumSamples());
+            
             processing = false;
-            processSample();
+            updateThumbnail();
         }
     }
 }
@@ -407,10 +391,14 @@ void RiseandfallAudioProcessor::processSample() {
 void RiseandfallAudioProcessor::newSampleLoaded() {
     printf("NEW SAMPLE LOADED: %d Channels, %d Samples\n", originalSampleBuffer.getNumChannels(), originalSampleBuffer.getNumSamples());
     numChannels = originalSampleBuffer.getNumChannels();
+    
     filters.clear();
     for (int i = 0; i < numChannels; i++) {
         filters.add(new IIRFilter());
     }
+    
+    normalizeSample(originalSampleBuffer);
+    trim(originalSampleBuffer);
     processSample();
 }
 
@@ -452,7 +440,7 @@ void RiseandfallAudioProcessor::audioProcessorParameterChanged(AudioProcessor *p
                 default:
                     break;
             }
-
+            
             for (int i = 0; i < numChannels; i++) {
                 filters[i]->setCoefficients(coeffs);
             }
@@ -474,7 +462,6 @@ void RiseandfallAudioProcessor::audioProcessorParameterChangeGestureEnd(AudioPro
     } else if (id == TIME_OFFSET_ID) {
         processing = true;
         concatenate();
-        trim();
         position = 0;
         numSamples = processedSampleBuffer.getNumSamples();
         processing = false;
@@ -482,8 +469,12 @@ void RiseandfallAudioProcessor::audioProcessorParameterChangeGestureEnd(AudioPro
     }
 }
 
-Value &RiseandfallAudioProcessor::getPosition() {
+int RiseandfallAudioProcessor::getPosition() {
     return position;
+}
+
+int RiseandfallAudioProcessor::getNumSamples() {
+    return numSamples;
 }
 
 int RiseandfallAudioProcessor::getIntegerSampleRate() {
@@ -497,34 +488,34 @@ int RiseandfallAudioProcessor::getSampleDuration() {
 void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
     printf("IMPULSE RESPONSE CHANGED: %d\n", id);
     /*
-    const char* resourceName;
-    int resourceSize;
-    
-    switch(id){
-        case 0:
-            resourceName = BinaryData::room_impulse_response_LBS_wav;
-            resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
-            break;
-        default:
-            printf("default impulse response\n");
-            resourceName = BinaryData::room_impulse_response_LBS_wav;
-            resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
-    }
-    
-    ScopedPointer<MemoryInputStream> input = new MemoryInputStream(resourceName, resourceSize, false);
-    ScopedPointer<WavAudioFormat> format = new WavAudioFormat();
-    ScopedPointer<AudioFormatReader> reader = format->createReaderFor(input, false);
-    
-    printf("Impulse Response before: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
-    
-    impulseResponseSampleBuffer.setSize(numChannels, static_cast<int>(reader->lengthInSamples));
-    reader->read(&impulseResponseSampleBuffer, numChannels, 0, reader->lengthInSamples, true, true);
-    normalizeSample(impulseResponseSampleBuffer);
-    
-    printf("Impulse Response after: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
-    
-    reader->input = nullptr;
-    */
+     const char* resourceName;
+     int resourceSize;
+     
+     switch(id){
+     case 0:
+     resourceName = BinaryData::room_impulse_response_LBS_wav;
+     resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
+     break;
+     default:
+     printf("default impulse response\n");
+     resourceName = BinaryData::room_impulse_response_LBS_wav;
+     resourceSize = BinaryData::room_impulse_response_LBS_wavSize;
+     }
+     
+     ScopedPointer<MemoryInputStream> input = new MemoryInputStream(resourceName, resourceSize, false);
+     ScopedPointer<WavAudioFormat> format = new WavAudioFormat();
+     ScopedPointer<AudioFormatReader> reader = format->createReaderFor(input, false);
+     
+     printf("Impulse Response before: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
+     
+     impulseResponseSampleBuffer.setSize(numChannels, static_cast<int>(reader->lengthInSamples));
+     reader->read(&impulseResponseSampleBuffer, numChannels, 0, reader->lengthInSamples, true, true);
+     normalizeSample(impulseResponseSampleBuffer);
+     
+     printf("Impulse Response after: %d Channels, %d Samples, magnitude: %.2f\n", this->impulseResponseSampleBuffer.getNumChannels(), this->impulseResponseSampleBuffer.getNumSamples(), this->impulseResponseSampleBuffer.getMagnitude(0, this->impulseResponseSampleBuffer.getNumSamples()));
+     
+     reader->input = nullptr;
+     */
     
     File file("/Users/Barthy/Desktop/room_impulse_response_LBS.wav");
     String filePath = file.getFullPathName();
@@ -533,7 +524,7 @@ void RiseandfallAudioProcessor::loadNewImpulseResponse(int id){
         const double duration = reader->lengthInSamples / reader->sampleRate;
         if (duration < 20) {
             impulseResponseSampleBuffer.setSize(reader->numChannels,
-                                         static_cast<int>(reader->lengthInSamples));
+                                                static_cast<int>(reader->lengthInSamples));
             reader->read(&impulseResponseSampleBuffer, 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
             normalizeSample(impulseResponseSampleBuffer);
             this->processSample();

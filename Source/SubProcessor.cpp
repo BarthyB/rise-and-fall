@@ -5,29 +5,21 @@
 #define AVOID_REALLOCATING false
 #define BUFFER_SIZE 1024
 
-#include "ProcessingThreadPoolJob.h"
+#include "SubProcessor.h"
 
-ProcessingThreadPoolJob::ProcessingThreadPoolJob(ThreadType type, AudioSampleBuffer &bufferIn,
+SubProcessor::SubProcessor(ThreadType type, AudioSampleBuffer &bufferIn,
                                                  AudioProcessorValueTreeState &vts,
                                                  double sampleRate,
-                                                 AudioSampleBuffer &impulseResponseSampleBuffer)
-        : ThreadPoolJob("Processing Thread Pool Job"), parameters(vts) {
+                                                 AudioSampleBuffer &impulseResponseSampleBuffer) : bufferIn(bufferIn), parameters(vts) {
     this->type = type;
-    this->bufferIn = bufferIn;
     this->sampleRate = sampleRate;
     this->impulseResponseSampleBuffer = impulseResponseSampleBuffer;
-    this->convolvers.clear();
 
     soundTouch.setChannels(1); // always iterate over single channels
     soundTouch.setSampleRate(static_cast<uint>(sampleRate));
-    
-    for (int i = 0; i < this->impulseResponseSampleBuffer.getNumChannels(); i++) {
-        convolvers.add(new fftconvolver::TwoStageFFTConvolver());
-        convolvers[i]->init(BUFFER_SIZE, BUFFER_SIZE, this->impulseResponseSampleBuffer.getReadPointer(i), this->impulseResponseSampleBuffer.getNumSamples());
-    }
 }
 
-void ProcessingThreadPoolJob::applyTimeWarp(int factor) {
+void SubProcessor::applyTimeWarp(int factor) {
     float realFactor = factor;
     if (realFactor < 0) {
         realFactor = 1 / abs(realFactor);
@@ -48,7 +40,7 @@ void ProcessingThreadPoolJob::applyTimeWarp(int factor) {
     }
 }
 
-void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &base, float dampen, int delayTimeInSamples, int iteration) {
+void SubProcessor::applyDelay(AudioSampleBuffer &base, float dampen, int delayTimeInSamples, int iteration) {
     base.applyGain(dampen);
     if (base.getMagnitude(0, base.getNumSamples()) > 0.005) {
         int currentDelayPosition = delayTimeInSamples * iteration;
@@ -65,21 +57,27 @@ void ProcessingThreadPoolJob::applyDelay(AudioSampleBuffer &base, float dampen, 
     }
 }
 
-void ProcessingThreadPoolJob::applyReverb() {
+void SubProcessor::applyReverb() {
     AudioSampleBuffer copy;
     copy.makeCopyOf(bufferIn);
     
-    int processedSize = impulseResponseSampleBuffer.getNumSamples() + copy.getNumSamples() - 1;
+    const int processedSize = impulseResponseSampleBuffer.getNumSamples() + copy.getNumSamples() - 1;
     bufferIn.setSize(bufferIn.getNumChannels(), processedSize, false, true, AVOID_REALLOCATING);
     
-    for (int i = 0; i < copy.getNumChannels(); i++) {
-        int impulseResponseChannelIndex = jmin(i, impulseResponseSampleBuffer.getNumChannels() - 1);
-        convolvers[impulseResponseChannelIndex]->process(copy.getReadPointer(i), bufferIn.getWritePointer(i), copy.getNumSamples());
-    }
+    const int numChannels = bufferIn.getNumChannels();
+    const ProcessSpec spec = {sampleRate, static_cast<uint32>(processedSize), static_cast<uint32>(numChannels)};
+    
+    convolution.prepare(spec);
+    convolution.copyAndLoadImpulseResponseFromBuffer(impulseResponseSampleBuffer, sampleRate, impulseResponseSampleBuffer.getNumChannels() > 1, true, false, impulseResponseSampleBuffer.getNumSamples());
+    
+    AudioBlock<float> audioBlockIn = AudioBlock<float>(copy);
+    AudioBlock<float> audioBlockOut = AudioBlock<float>(bufferIn);
+    ProcessContextNonReplacing<float> processContext = ProcessContextNonReplacing<float>(audioBlockIn, audioBlockOut);
+    convolution.process(processContext);
 }
 
 
-ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
+void SubProcessor::process() {
     AudioSampleBuffer delayBaseTempBuffer;
     float delayFeedbackNormalized = *parameters.getRawParameterValue(DELAY_FEEDBACK_ID) / 100.0f;
     float delayTimeNormalized = *parameters.getRawParameterValue(DELAY_TIME_ID) / 1000.0f;
@@ -114,12 +112,6 @@ ThreadPoolJob::JobStatus ProcessingThreadPoolJob::runJob() {
     if (riseReverse || fallReverse) {
         bufferIn.reverse(0, bufferIn.getNumSamples());
     }
-
-    return jobHasFinished;
 }
 
-AudioSampleBuffer ProcessingThreadPoolJob::getOutputBuffer() {
-    return bufferIn;
-}
-
-ProcessingThreadPoolJob::~ProcessingThreadPoolJob() = default;
+SubProcessor::~SubProcessor() = default;

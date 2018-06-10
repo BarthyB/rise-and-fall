@@ -25,7 +25,7 @@ class RiseandfallAudioProcessorEditor :
         public AudioProcessorEditor,
         public Button::Listener,
         public ChangeListener,
-        public Value::Listener {
+        private Timer {
 public:
     RiseandfallAudioProcessorEditor(RiseandfallAudioProcessor &, AudioProcessorValueTreeState& vts);
 
@@ -78,8 +78,6 @@ private:
     AudioFormatManager formatManager;
 
     const Rectangle<int> thumbnailBounds;
-    double positionSeconds;
-    int positionPixels;
 
     void initSlider(Slider *slider, const String &label, const String &suffix, bool logarithmic, bool linear);
 
@@ -92,8 +90,8 @@ private:
     void changeListenerCallback(ChangeBroadcaster *source) override;
 
     void loadFileButtonCLicked();
-
-    void valueChanged(Value & v) override;
+            
+    void timerCallback() override;
             
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessorEditor)
 };

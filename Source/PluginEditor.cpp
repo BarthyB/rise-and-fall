@@ -110,9 +110,7 @@ RiseandfallAudioProcessorEditor::RiseandfallAudioProcessorEditor(RiseandfallAudi
     processor.getThumbnail()->addChangeListener(this);
     formatManager.registerBasicFormats();
 
-    processor.getPosition().addListener(this);
-    positionSeconds = 0;
-    positionPixels = 0;
+    startTimer (40);
 }
 
 RiseandfallAudioProcessorEditor::~RiseandfallAudioProcessorEditor() {
@@ -130,15 +128,18 @@ void RiseandfallAudioProcessorEditor::paint(Graphics &g) {
     if (processor.getOriginalSampleBuffer()->getNumChannels() != 0) {
         g.setColour(customLookAndFeel.COLOUR_RED);
         processor.getThumbnail()->drawChannels(g, thumbnailBounds, 0.0, processor.getThumbnail()->getTotalLength(), 1.0f);
+        
+        g.setColour(customLookAndFeel.COLOUR_BLACK);
+        
+        int position = processor.getPosition();
+        int numSamples = processor.getNumSamples();
+        float percentage = (float) position / numSamples;
+        int drawPosition = (percentage * 656) + 16;
+        g.drawLine(drawPosition, thumbnailBounds.getY() - 16, drawPosition, thumbnailBounds.getBottom() + 16, 1.0f);
     } else {
         g.setColour(customLookAndFeel.COLOUR_BLACK);
         g.setFont(fontSize);
         g.drawFittedText("NO SAMPLE", thumbnailBounds, Justification::centred, 1);
-    }
-
-    if (positionSeconds > 0) {
-        g.setColour(customLookAndFeel.COLOUR_BLACK);
-        g.fillRect(positionPixels, 528, 1, 696);
     }
 }
 
@@ -190,11 +191,6 @@ void RiseandfallAudioProcessorEditor::changeListenerCallback(ChangeBroadcaster *
     }
 }
 
-void RiseandfallAudioProcessorEditor::valueChanged(Value &v) {
-    double newPosition = v.getValue();
-    double newSeconds = newPosition / processor.getIntegerSampleRate();
-    positionSeconds = newSeconds;
-    double percentage = positionSeconds / processor.getSampleDuration();
-    positionPixels = static_cast<int>(percentage * 656) + 16;
-    repaint(thumbnailBounds.expanded(30));
+void RiseandfallAudioProcessorEditor::timerCallback() {
+    repaint();
 }

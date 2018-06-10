@@ -8,7 +8,6 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../modules/juce_dsp/juce_dsp.h"
 #include "../Lib/SoundTouch/SoundTouch.h"
-#include "../Lib/FFTConvolver/TwoStageFFTConvolver.h"
 #include "GUIParams.h"
 
 using namespace soundtouch;
@@ -18,19 +17,17 @@ typedef enum ThreadTypeEnum {
     RISE = 0, FALL
 } ThreadType;
 
-class ProcessingThreadPoolJob : public ThreadPoolJob {
+class SubProcessor {
 
 public:
-    ProcessingThreadPoolJob(ThreadType type, AudioSampleBuffer &bufferIn, AudioProcessorValueTreeState& vts, double sampleRate, AudioSampleBuffer &impulseResponseSamleBuffer);
+    SubProcessor(ThreadType type, AudioSampleBuffer &bufferIn, AudioProcessorValueTreeState& vts, double sampleRate, AudioSampleBuffer &impulseResponseSamleBuffer);
 
-    ~ProcessingThreadPoolJob() override;
+    ~SubProcessor();
 
-    JobStatus runJob() override;
-
-    AudioSampleBuffer getOutputBuffer();
+    void process();
 
 private:
-    AudioSampleBuffer bufferIn;
+    AudioSampleBuffer &bufferIn;
     AudioProcessorValueTreeState &parameters;
     AudioSampleBuffer impulseResponseSampleBuffer;
     ThreadType type;
@@ -45,8 +42,6 @@ private:
      * Convolution engine for the reverb effect
      */
     Convolution convolution;
-    
-    OwnedArray<fftconvolver::TwoStageFFTConvolver> convolvers;
 
     /**
      * Warp audio samples to change the speed and pitch
@@ -73,7 +68,7 @@ private:
      */
     void applyReverb();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessingThreadPoolJob);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SubProcessor);
 };
 
 

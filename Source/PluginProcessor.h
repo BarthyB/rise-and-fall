@@ -85,7 +85,9 @@ public:
      */
     AudioThumbnail *getThumbnail();
 
-    Value &getPosition();
+    int getPosition();
+    
+    int getNumSamples();
 
     int getIntegerSampleRate();
 
@@ -111,11 +113,6 @@ public:
     void processSample();
 
 private:
-
-    /**
-     * Thread pool to execute multiple tasks at once and to separate GUI Threads from Processing threads
-     */
-    ThreadPool pool{2};
 
     /**
      * Buffer containing the samples of the original audio file
@@ -165,7 +162,7 @@ private:
     /**
      * Current position in the processing of sample blocks
      */
-    Value position;
+    int position;
 
     /**
      * Handles basic audio formats (wav, aiff)
@@ -224,7 +221,7 @@ private:
      */
     void concatenate();
     
-    void trim();
+    void trim(AudioSampleBuffer &buffer);
 
     /**
      * Update the thumbnail image
@@ -254,7 +251,7 @@ private:
      * @param parameterIndex
      */
     void audioProcessorParameterChangeGestureEnd(AudioProcessor* processor, int parameterIndex) override;
-
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RiseandfallAudioProcessor)
 };
