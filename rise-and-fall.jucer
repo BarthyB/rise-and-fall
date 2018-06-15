@@ -14,70 +14,12 @@
               companyWebsite="http://barthy.koeln" companyEmail="post@barthy.koeln"
               pluginFormats="buildVST,buildVST3,buildAU,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               pluginRTASDisableBypass="0" pluginRTASDisableMultiMono="0" pluginAAXDisableBypass="0"
-              pluginAAXDisableMultiMono="0" pluginAUMainType="'augn'" headerPath="/usr/local/include/fftw3.h">
+              pluginAAXDisableMultiMono="0" pluginAUMainType="'augn'" headerPath="/usr/local/include/fftw3.h&#10;/usr/local/include/soundtouch/"
+              displaySplashScreen="0">
   <MAINGROUP id="UHNwjp" name="RISE&amp;FALL">
-    <GROUP id="{82B20B1B-AC74-0C47-3E9D-3777EEB27B6F}" name="Lib">
-      <GROUP id="{250A8187-CDFD-7FFF-73E7-D6CC21F9F3D1}" name="FFTConvolver">
-        <FILE id="Dwjyle" name="AudioFFT.cpp" compile="1" resource="0" file="Lib/FFTConvolver/AudioFFT.cpp"/>
-        <FILE id="b4OeFZ" name="AudioFFT.h" compile="0" resource="0" file="Lib/FFTConvolver/AudioFFT.h"/>
-        <FILE id="W4uh6x" name="FFTConvolver.cpp" compile="1" resource="0"
-              file="Lib/FFTConvolver/FFTConvolver.cpp"/>
-        <FILE id="pzVcS2" name="FFTConvolver.h" compile="0" resource="0" file="Lib/FFTConvolver/FFTConvolver.h"/>
-        <FILE id="YuY9nh" name="TwoStageFFTConvolver.cpp" compile="1" resource="0"
-              file="Lib/FFTConvolver/TwoStageFFTConvolver.cpp"/>
-        <FILE id="XZvhcM" name="TwoStageFFTConvolver.h" compile="0" resource="0"
-              file="Lib/FFTConvolver/TwoStageFFTConvolver.h"/>
-        <FILE id="zXyYcg" name="Utilities.cpp" compile="1" resource="0" file="Lib/FFTConvolver/Utilities.cpp"/>
-        <FILE id="uUXi5w" name="Utilities.h" compile="0" resource="0" file="Lib/FFTConvolver/Utilities.h"/>
-      </GROUP>
-      <GROUP id="{55FDE5FE-A537-FB4E-F378-CB3B221A7A49}" name="SoundTouch">
-        <FILE id="VZS7nH" name="AAFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/AAFilter.cpp"/>
-        <FILE id="t4zAIU" name="AAFilter.h" compile="0" resource="0" file="Lib/SoundTouch/AAFilter.h"/>
-        <FILE id="QG9xNY" name="BPMDetect.cpp" compile="1" resource="0" file="Lib/SoundTouch/BPMDetect.cpp"/>
-        <FILE id="YjMRxl" name="BPMDetect.h" compile="0" resource="0" file="Lib/SoundTouch/BPMDetect.h"/>
-        <FILE id="TxJPCT" name="cpu_detect.h" compile="0" resource="0" file="Lib/SoundTouch/cpu_detect.h"/>
-        <FILE id="LbJaXj" name="cpu_detect_x86.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/cpu_detect_x86.cpp"/>
-        <FILE id="kDITy4" name="FIFOSampleBuffer.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/FIFOSampleBuffer.cpp"/>
-        <FILE id="SNxI8T" name="FIFOSampleBuffer.h" compile="0" resource="0"
-              file="Lib/SoundTouch/FIFOSampleBuffer.h"/>
-        <FILE id="OQeKJ4" name="FIFOSamplePipe.h" compile="0" resource="0"
-              file="Lib/SoundTouch/FIFOSamplePipe.h"/>
-        <FILE id="tlXxv2" name="FIRFilter.cpp" compile="1" resource="0" file="Lib/SoundTouch/FIRFilter.cpp"/>
-        <FILE id="UJNusa" name="FIRFilter.h" compile="0" resource="0" file="Lib/SoundTouch/FIRFilter.h"/>
-        <FILE id="rVCtnm" name="InterpolateCubic.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/InterpolateCubic.cpp"/>
-        <FILE id="mnRn1o" name="InterpolateCubic.h" compile="0" resource="0"
-              file="Lib/SoundTouch/InterpolateCubic.h"/>
-        <FILE id="SvDuTd" name="InterpolateLinear.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/InterpolateLinear.cpp"/>
-        <FILE id="uaO8rm" name="InterpolateLinear.h" compile="0" resource="0"
-              file="Lib/SoundTouch/InterpolateLinear.h"/>
-        <FILE id="Ppxw2H" name="InterpolateShannon.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/InterpolateShannon.cpp"/>
-        <FILE id="jbhOpU" name="InterpolateShannon.h" compile="0" resource="0"
-              file="Lib/SoundTouch/InterpolateShannon.h"/>
-        <FILE id="uWtTz0" name="mmx_optimized.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/mmx_optimized.cpp"/>
-        <FILE id="W6zTLk" name="PeakFinder.cpp" compile="1" resource="0" file="Lib/SoundTouch/PeakFinder.cpp"/>
-        <FILE id="To8U2s" name="PeakFinder.h" compile="0" resource="0" file="Lib/SoundTouch/PeakFinder.h"/>
-        <FILE id="st9w4C" name="RateTransposer.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/RateTransposer.cpp"/>
-        <FILE id="bPlcje" name="RateTransposer.h" compile="0" resource="0"
-              file="Lib/SoundTouch/RateTransposer.h"/>
-        <FILE id="ex1tv2" name="SoundTouch.cpp" compile="1" resource="0" file="Lib/SoundTouch/SoundTouch.cpp"/>
-        <FILE id="Kq4iI5" name="SoundTouch.h" compile="0" resource="0" file="Lib/SoundTouch/SoundTouch.h"/>
-        <FILE id="vHgObI" name="soundtouch_config.h" compile="0" resource="0"
-              file="Lib/SoundTouch/soundtouch_config.h"/>
-        <FILE id="QeAJMs" name="sse_optimized.cpp" compile="1" resource="0"
-              file="Lib/SoundTouch/sse_optimized.cpp"/>
-        <FILE id="tWqIAm" name="STTypes.h" compile="0" resource="0" file="Lib/SoundTouch/STTypes.h"/>
-        <FILE id="AGxpDa" name="TDStretch.cpp" compile="1" resource="0" file="Lib/SoundTouch/TDStretch.cpp"/>
-        <FILE id="e05Csi" name="TDStretch.h" compile="0" resource="0" file="Lib/SoundTouch/TDStretch.h"/>
-      </GROUP>
-    </GROUP>
     <GROUP id="{E54CE0C6-4AE7-C673-6E88-4FC41715E328}" name="Source">
+      <FILE id="qXuAp5" name="NoteLengthSlider.h" compile="0" resource="0"
+            file="Source/NoteLengthSlider.h"/>
       <FILE id="BGn0L1" name="SimplePositionOverlay.h" compile="0" resource="0"
             file="Source/SimplePositionOverlay.h"/>
       <FILE id="KP5PrT" name="SimpleThumbnailComponent.hpp" compile="0" resource="0"
@@ -100,6 +42,7 @@
       <FILE id="gni1Oi" name="background.png" compile="0" resource="1" file="Resources/background.png"/>
       <FILE id="N9k4Hv" name="empty_apartment_bedroom-48khz-norm-trim.wav"
             compile="0" resource="1" file="Resources/empty_apartment_bedroom-48khz-norm-trim.wav"/>
+      <FILE id="ao32Du" name="icon.png" compile="0" resource="1" file="Resources/icon.png"/>
       <FILE id="wndgnT" name="nuclear _reactor_hall-48khz-norm-trim.wav"
             compile="0" resource="1" file="Resources/nuclear _reactor_hall-48khz-norm-trim.wav"/>
       <FILE id="G6YCca" name="st_georges-48khz-norm-trim.wav" compile="0"
@@ -113,12 +56,13 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" vst3Folder="" externalLibraries="fftw3f">
+    <XCODE_MAC targetFolder="Builds/MacOSX" vst3Folder="" externalLibraries="fftw3f&#10;soundtouch"
+               smallIcon="ao32Du" bigIcon="ao32Du">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" enablePluginBinaryCopyStep="1" isDebug="1" optimisation="1"
-                       linkTimeOptimisation="0" targetName="rise-and-fall" libraryPath="/usr/local/lib/"/>
+                       linkTimeOptimisation="0" targetName="Rise &amp; Fall" libraryPath="/usr/local/lib/"/>
         <CONFIGURATION name="Release" enablePluginBinaryCopyStep="1" isDebug="0" optimisation="3"
-                       linkTimeOptimisation="1" targetName="rise-and-fall" libraryPath="/usr/local/lib/"/>
+                       linkTimeOptimisation="1" targetName="Rise &amp; Fall" libraryPath="/usr/local/lib/"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../JUCE/modules"/>
